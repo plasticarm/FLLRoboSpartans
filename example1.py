@@ -1,6 +1,7 @@
 from hub import port, light_matrix, motion_sensor
+import hub
 import motor
-import runloop, motor_pair, sys, math
+import runloop, motor_pair, sys, math, asyncio
 
 # GLOBALS
 # Set from -355 to 355. Positive numbers are clockwise.
@@ -40,8 +41,14 @@ def degreesForDistance(distance_cm):
     return int((distance_cm/WHEEL_CIRCUMFERENCE) * 360)
 
 async def drive(distance, speed):
-    motor_pair.pair(motor_pair.PAIR_1, port.A, port.B)
+    #motor_pair.pair(motor_pair.PAIR_1, port.A, port.B)
     await motor_pair.move_for_degrees(motor_pair.PAIR_1, degreesForDistance(distance), 0, velocity=speed, stop=motor.BRAKE, acceleration=1000, deceleration=1000)
+
+async def rotateRightArm(degrees, speed):
+    await motor.run_for_degrees(port.D, degrees, speed)
+
+async def rotateLeftArm(degrees, speed):
+    await motor.run_for_degrees(port.C, degrees, speed)
 
 async def rotateDegrees(degrees, speed):
     global degrees_to_turn, stop_angle# <-- Add this line
@@ -82,10 +89,25 @@ async def pivot_turn(robot_degrees, motor_speed):
         #pivot counter clockwise
         await motor_pair.move_for_degrees(motor_pair.PAIR_1, motor_degrees, -50, velocity=motor_speed)
 
+async def all_done():
+    return (motor.velocity(port.C) is 0 and motor.velocity(port.D) is 0)
+
 async def main():
-    await drive(10, 660)
-    await rotateDegrees(90, 400)
-    await spin_turn(720, 400)
-    await pivot_turn(720, 400)
+    await setupMotors()
+    while True:
+        await drive(15, 660)
+        await drive(-15, 660)
+        await rotateLeftArm(90, 660)
+        await rotateRightArm(90, 660)
+        #await asyncio.sleep(1)
+        a = rotateLeftArm(720, 660)
+        b = rotateRightArm(720, 660)
+        # run both the functions together
+        runloop.run(*[a,b])
+        # wait until both motors have stopped
+        #await runloop.until(all_done)
+        #await asyncio.gather(rotateLeftArm(90, 660), rotateRightArm(90, 660))
+        #await spin_turn(720, 400)
+        #await pivot_turn(720, 400)
 
 runloop.run(main())
