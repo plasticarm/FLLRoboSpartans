@@ -8,7 +8,7 @@ import runloop, motor_pair, sys, math, asyncio
 degrees_to_turn = 0 # Yaw angle reading that indicates the robot needs to stop
 stop_angle = 0
 
-TRACK = 11.2 # cm - please measure your own robot.
+TRACK = 11.2 # distance between wheels. cm - please measure your own robot.
 # cm, this is a constant for your robot
 WHEEL_CIRCUMFERENCE = 17.5
 # input must be in the same unit as WHEEL_CIRCUMFERENCE
