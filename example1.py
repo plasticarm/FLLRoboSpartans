@@ -1,3 +1,4 @@
+
 from hub import port, light_matrix, motion_sensor
 import hub
 import motor
@@ -20,15 +21,18 @@ async def setupMotors():
     motion_sensor.reset_yaw(0)
     await runloop.until(motion_sensor.stable)
 
+async def resetYaw():
+    motion_sensor.reset_yaw(0)
+    await runloop.until(motion_sensor.stable)
+
 # Function that returns true when the yaw has turned past stop angle
-def turn_done():
-    global degrees_to_turn, stop_angle
+def turn_done(): 
+    global degrees_to_turn, stop_angle   
     # convert tuple decidegree into the same format as in app and blocks
     yaw_angle = motion_sensor.tilt_angles()[0] * -0.1
     # if we need to turn less than 180 degrees, check the absolute values
     if (abs(degrees_to_turn) < 180):
         return abs(yaw_angle) > stop_angle
-
     # If we need to turn more than 180 degrees, compute the yaw angle we need to stop at.
     if degrees_to_turn >= 0:
         # moving clockwise # The adjusted yaw angle is positive until we cross 180. # Then, we are negative numbers counting up.
@@ -50,14 +54,14 @@ async def rotateRightArm(degrees, speed):
 async def rotateLeftArm(degrees, speed):
     await motor.run_for_degrees(port.C, degrees, speed)
 
-async def rotateDegrees(degrees, speed):
-    global degrees_to_turn, stop_angle# <-- Add this line
+async def rotateDegrees(degrees, speed):  
+    global degrees_to_turn, stop_angle  
     if abs(degrees) > 355:
         print ("Out of range")
         return
     #await setupMotors()
+    await resetYaw()
     degrees_to_turn = degrees
-
     if (abs(degrees) < 180):
         stop_angle = abs(degrees_to_turn)
     else:
@@ -67,6 +71,8 @@ async def rotateDegrees(degrees, speed):
     motor_pair.move(motor_pair.PAIR_1, steering_val, velocity=speed)
     await runloop.until(turn_done)
     motor_pair.stop(motor_pair.PAIR_1)
+    degrees_to_turn = 0
+    stop_angle = 0
 
 async def spin_turn(robot_degrees, motor_speed):
     # Add a multiplier for gear ratios if you’re using gears
@@ -89,7 +95,7 @@ async def pivot_turn(robot_degrees, motor_speed):
         #pivot counter clockwise
         await motor_pair.move_for_degrees(motor_pair.PAIR_1, motor_degrees, -50, velocity=motor_speed)
 
-async def all_done():
+def all_done():
     return (motor.velocity(port.C) is 0 and motor.velocity(port.D) is 0)
 
 async def main():
@@ -97,15 +103,28 @@ async def main():
     while True:
         await drive(15, 660)
         await drive(-15, 660)
-        await rotateLeftArm(90, 660)
-        await rotateRightArm(90, 660)
-        #await asyncio.sleep(1)
+        await rotateLeftArm(360, 660)
+        await rotateRightArm(360, 660)
+        await asyncio.sleep(1)
+        await rotateDegrees(180, 300)
+        #await spin_turn(360, 400)
         a = rotateLeftArm(720, 660)
         b = rotateRightArm(720, 660)
         # run both the functions together
         runloop.run(*[a,b])
-        # wait until both motors have stopped
         #await runloop.until(all_done)
+        await rotateDegrees(-180, 300)
+        #await spin_turn(360, 400)
+        # wait until both motors have stopped
+        await runloop.until(all_done)
+        await rotateDegrees(180, 300)
+        #await rotateDegrees(180, 300)
+
+        a = rotateLeftArm(720, 660)
+        b = rotateRightArm(720, 660)
+        c = rotateDegrees(-180, 300)
+        # run both the functions together
+        runloop.run(*[a,b, c])
         #await asyncio.gather(rotateLeftArm(90, 660), rotateRightArm(90, 660))
         #await spin_turn(720, 400)
         #await pivot_turn(720, 400)
