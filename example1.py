@@ -14,7 +14,7 @@ TRACK = 11.2 # distance between wheels. cm - please measure your own robot.
 WHEEL_CIRCUMFERENCE = 17.5
 # input must be in the same unit as WHEEL_CIRCUMFERENCE
 SPIN_CIRCUMFERENCE = TRACK * math.pi
-PIVOT_CIRCUMFERENCE = 2 * TRACK * math.pi
+PIVOT_CIRCUMFERENCE = 2 * TRACK * math.pi   
 
 async def setupMotors():
     motor_pair.pair(motor_pair.PAIR_1, port.A, port.B)
@@ -49,10 +49,13 @@ async def drive(distance, speed):
     await motor_pair.move_for_degrees(motor_pair.PAIR_1, degreesForDistance(distance), 0, velocity=speed, stop=motor.BRAKE, acceleration=1000, deceleration=1000)
 
 async def rotateRightArm(degrees, speed):
-    await motor.run_for_degrees(port.D, degrees, speed)
+    await motor.run_for_degrees(port.D, degrees * 3, speed)
 
 async def rotateLeftArm(degrees, speed):
-    await motor.run_for_degrees(port.C, degrees, speed)
+    await motor.run_for_degrees(port.C, degrees * 3, speed)
+
+async def rotateCenterArm(degrees, speed):
+    await motor.run_for_degrees(port.D, degrees * math.ceil(4.9), speed)
 
 async def rotateDegrees(degrees, speed):  
     global degrees_to_turn, stop_angle  
@@ -100,6 +103,8 @@ def all_done():
 
 async def main():
     await setupMotors()
+    
+        
     while True:
         await drive(15, 660)
         await drive(-15, 660)
@@ -107,9 +112,10 @@ async def main():
         await rotateRightArm(360, 660)
         await asyncio.sleep(1)
         await rotateDegrees(180, 300)
+        await rotateCenterArm(360, 660)
         #await spin_turn(360, 400)
-        a = rotateLeftArm(720, 660)
-        b = rotateRightArm(720, 660)
+        a = rotateLeftArm(180, 660)
+        b = rotateRightArm(180, 660)
         # run both the functions together
         runloop.run(*[a,b])
         #await runloop.until(all_done)
@@ -120,8 +126,8 @@ async def main():
         await rotateDegrees(180, 300)
         #await rotateDegrees(180, 300)
 
-        a = rotateLeftArm(720, 660)
-        b = rotateRightArm(720, 660)
+        a = rotateLeftArm(180, 660)
+        b = rotateRightArm(180, 660)
         c = rotateDegrees(-180, 300)
         # run both the functions together
         runloop.run(*[a,b, c])
