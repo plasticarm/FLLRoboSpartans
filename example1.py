@@ -4,10 +4,8 @@ import motor
 import runloop, motor_pair, sys, math, asyncio
 
 # GLOBALS
-# Set from -355 to 355. Positive numbers are clockwise.
 degrees_to_turn = 0 # Yaw angle reading that indicates the robot needs to stop
 stop_angle = 0
-
 TRACK = 11.2 # distance between wheels. cm - please measure your own robot.
 # cm, this is a constant for your robot
 WHEEL_CIRCUMFERENCE = 17.5
@@ -35,6 +33,28 @@ async def resetYaw():
     motion_sensor.reset_yaw(0)
     await runloop.until(motion_sensor.stable)
 
+def degreesForDistance(distance_cm):
+    # Add multiplier for gear ratio if needed
+    return int((distance_cm/WHEEL_CIRCUMFERENCE) * 360)
+
+async def drive(distance, speed):
+    await motor_pair.move_for_degrees(motor_pair.PAIR_1, degreesForDistance(distance), 0, velocity=speed, stop=motor.BRAKE, acceleration=1000, deceleration=1000)
+
+async def rotateRightArm(degrees, speed):
+    await motor.run_for_degrees(port.C, degrees * 3, speed)
+
+async def rotateLeftArm(degrees, speed):
+    await motor.run_for_degrees(port.D, degrees * 3, speed)
+
+async def rotateCenterArm(degrees, speed):
+    await motor.run_for_degrees(port.C, degrees * math.ceil(4.9), speed)
+
+async def resetArmRotation():
+    global _left_arm_start_angle, _right_arm_start_angle, _center_arm_start_angle
+    a = motor.run_to_relative_position(port.C, _left_arm_start_angle, 660)
+    b = motor.run_to_relative_position(port.D, _right_arm_start_angle, 660)
+    runloop.run(*[a,b])
+
 # Function that returns true when the yaw has turned past stop angle
 def turn_done():
     global degrees_to_turn, stop_angle
@@ -50,41 +70,13 @@ def turn_done():
     else: # The adjusted yaw angle is negative until we cross 180 # Then, we are positive numbers counting down.
         return yaw_angle > 0 and yaw_angle < stop_angle
 
-def degreesForDistance(distance_cm):
-    # Add multiplier for gear ratio if needed
-    return int((distance_cm/WHEEL_CIRCUMFERENCE) * 360)
-
-async def drive(distance, speed):
-    #motor_pair.pair(motor_pair.PAIR_1, port.A, port.B)
-    await motor_pair.move_for_degrees(motor_pair.PAIR_1, degreesForDistance(distance), 0, velocity=speed, stop=motor.BRAKE, acceleration=1000, deceleration=1000)
-
-async def rotateRightArm(degrees, speed):
-    await motor.run_for_degrees(port.C, degrees * 3, speed)
-
-async def rotateLeftArm(degrees, speed):
-    await motor.run_for_degrees(port.D, degrees * 3, speed)
-
-async def rotateCenterArm(degrees, speed):
-    await motor.run_for_degrees(port.C, degrees * math.ceil(4.9), speed)
-
-# New function to reset arm rotations to their initial position
-async def resetArmRotation():
-    global _left_arm_start_angle, _right_arm_start_angle, _center_arm_start_angle
-
-    print("Resetting arm rotations...")
-
-    # Use asyncio.gather to run all resets concurrently
-    a = motor.run_to_relative_position(port.C, _left_arm_start_angle, 660)
-    b = motor.run_to_relative_position(port.D, _right_arm_start_angle, 660)
-    runloop.run(*[a,b])
-    print("Arm rotations reset complete.")
-
+# basic rotation of robot with accuracy as priority
 async def rotateDegrees(degrees, speed):
     global degrees_to_turn, stop_angle
     if abs(degrees) > 355:
-        print ("Out of range")
+        print ("Out of range. Do not rotateDegrees for more than 355.")
         return
-    #await setupMotors()
+    # reset the yaw    
     await resetYaw()
     degrees_to_turn = degrees
     if (abs(degrees) < 180):
@@ -96,6 +88,7 @@ async def rotateDegrees(degrees, speed):
     motor_pair.move(motor_pair.PAIR_1, steering_val, velocity=speed)
     await runloop.until(turn_done)
     motor_pair.stop(motor_pair.PAIR_1)
+    # reset degrees_to_turn and stop_angle
     degrees_to_turn = 0
     stop_angle = 0
 
@@ -108,7 +101,6 @@ async def spin_turn(robot_degrees, motor_speed):
     else:
         #spin counter clockwise
         await motor_pair.move_for_degrees(motor_pair.PAIR_1, motor_degrees, -100, velocity=motor_speed)
-
 
 async def pivot_turn(robot_degrees, motor_speed):
     # Add a multiplier for gear ratios if you’re using gears
@@ -124,17 +116,15 @@ def all_done():
     return (motor.velocity(port.C) is 0 and motor.velocity(port.D) is 0)
 
 async def main():
+    # initialize the motor pair for wheels and save motor positions. Do this every time.
     await setupMotors()
-
+    # for repeating infinitly use while True:
     while True:
         await drive(15, 660)
         await drive(-15, 660)
         await rotateLeftArm(360, 660)
         await rotateRightArm(360, 660)
         await asyncio.sleep(1)
-
-        # Call the new reset function
-        
         await rotateDegrees(180, 300)
         #await rotateCenterArm(360, 660)
         #await spin_turn(360, 400)
@@ -147,21 +137,17 @@ async def main():
         #await spin_turn(360, 400)
         # wait until both motors have stopped
         await runloop.until(all_done)
-
-        # Another call to reset
-        await resetArmRotation()
-
         await rotateDegrees(180, 300)
         #await rotateDegrees(180, 300)
-
         a = rotateLeftArm(180, 660)
         b = rotateRightArm(180, 660)
         c = rotateDegrees(-180, 300)
-        # run both the functions together
+        # run the functions together
         runloop.run(*[a,b, c])
         #await asyncio.gather(rotateLeftArm(90, 660), rotateRightArm(90, 660))
         #await spin_turn(720, 400)
         #await pivot_turn(720, 400)
+        # reset the arms before finishing so they are ready to go again.
         await resetArmRotation()
         await sound.beep(400, 250)
 
