@@ -45,13 +45,13 @@ async def drive(distance, speed):
     await motor_pair.move_for_degrees(motor_pair.PAIR_1, degreesForDistance(distance), 0, velocity=speed, stop=motor.BRAKE, acceleration=1000, deceleration=1000)
 
 async def rotateRightArm(degrees, speed):
-    await motor.run_for_degrees(port.C, degrees * 3, speed)
-
-async def rotateLeftArm(degrees, speed):
     await motor.run_for_degrees(port.D, degrees * 3, speed)
 
+async def rotateLeftArm(degrees, speed):
+    await motor.run_for_degrees(port.C, degrees * 3, speed)
+
 async def rotateCenterArm(degrees, speed):
-    await motor.run_for_degrees(port.C, degrees * math.ceil(4.9), speed)
+    await motor.run_for_degrees(port.D, degrees * math.ceil(4.9), speed)
 
 async def resetArmRotation():
     global _left_arm_start_angle, _right_arm_start_angle, _center_arm_start_angle
