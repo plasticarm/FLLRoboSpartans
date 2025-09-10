@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robot Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        canvas {
+            border: 2px solid #e5e7eb;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 0.5rem;
+        }
+        .code-output {
+            background-color: #1f2937;
+            color: #d1d5db;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .instruction-item {
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid #4b5563;
+            cursor: grab;
+            background-color: #374151;
+            color: #d1d5db;
+            border-radius: 0.375rem;
+            margin-bottom: 0.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .instruction-item.dragging {
+            opacity: 0.5;
+        }
+        .instruction-item:hover {
+            background-color: #4b5563;
+        }
+        .instruction-controls button {
+            background: none;
+            border: none;
+            color: #d1d5db;
+            font-size: 0.875rem;
+            cursor: pointer;
+            padding: 0 0.25rem;
+            transition: color 0.2s;
+        }
+        .instruction-controls button:hover {
+            color: #9ca3af;
+        }
+        .edit-form input {
+            background-color: #1f2937;
+            color: #d1d5db;
+            border: 1px solid #4b5563;
+            border-radius: 0.25rem;
+            padding: 0.25rem;
+            width: 80px;
+        }
+        .edit-form button {
+            background: #22c55e;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="w-full bg-white p-8 rounded-lg shadow-lg">
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Controls and Output -->
+            <div class="flex-none w-full lg:w-[20%] flex flex-col gap-6">
+                <!-- Mission and Start Config -->
+                <div class="p-6 bg-gray-800 rounded-lg shadow-sm">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-200">Mission and Start Configuration</h2>
+                    <div class="mb-4">
+                        <label for="missionName" class="block text-sm font-medium text-gray-200">Mission Name</label>
+                        <input type="text" id="missionName" value="Robot Mission" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-700 text-gray-200">
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label for="startX" class="block text-sm font-medium text-gray-200">Start X (cm)</label>
+                            <input type="number" id="startX" value="-111.85" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-700 text-gray-200">
+                        </div>
+                        <div>
+                            <label for="startY" class="block text-sm font-medium text-gray-200">Start Y (cm)</label>
+                            <input type="number" id="startY" value="-48.15" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-700 text-gray-200">
+                        </div>
+                        <div>
+                            <label for="startAngle" class="block text-sm font-medium text-gray-200">Start Angle (deg)</label>
+                            <input type="number" id="startAngle" value="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-700 text-gray-200">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Robot Dimensions Input -->
+                <div class="p-6 bg-gray-800 rounded-lg shadow-sm">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-200">Robot Dimensions (cm)</h2>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="robotWidth" class="block text-sm font-medium text-gray-200">Width</label>
+                            <input type="number" id="robotWidth" value="12.5" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-700 text-gray-200">
+                        </div>
+                        <div>
+                            <label for="robotHeight" class="block text-sm font-medium text-gray-200">Height</label>
+                            <input type="number" id="robotHeight" value="18" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-700 text-gray-200">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Command Input -->
+                <div class="p-6 bg-gray-800 rounded-lg shadow-sm">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-200">Add Command</h2>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label for="waypointX" class="block text-sm font-medium text-gray-200">Waypoint X (cm)</label>
+                            <input type="number" id="waypointX" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-700 text-gray-200">
+                        </div>
+                        <div>
+                            <label for="waypointY" class="block text-sm font-medium text-gray-200">Waypoint Y (cm)</label>
+                            <input type="number" id="waypointY" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-700 text-gray-200">
+                        </div>
+                    </div>
+                    <button id="addWaypointBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300">
+                        Add Waypoint
+                    </button>
+                    
+                    <div class="grid grid-cols-2 gap-4 my-4">
+                        <div>
+                            <label for="moveDistance" class="block text-sm font-medium text-gray-200">Move Distance (cm)</label>
+                            <input type="number" id="moveDistance" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-700 text-gray-200">
+                        </div>
+                        <button id="addMoveBtn" class="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300">
+                            Add Move
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="rotateAngle" class="block text-sm font-medium text-gray-200">Rotate Angle (deg)</label>
+                            <input type="number" id="rotateAngle" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-700 text-gray-200">
+                        </div>
+                        <button id="addRotateBtn" class="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300">
+                            Add Rotate
+                        </button>
+                    </div>
+
+                    <button id="resetBtn" class="mt-4 w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300">
+                        Reset
+                    </button>
+                </div>
+                
+                <!-- Instruction List -->
+                <div class="p-6 bg-gray-800 rounded-lg shadow-sm">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-200">Instruction List</h2>
+                    <ul id="instructionList" class="text-gray-200 list-inside">
+                        <!-- Instructions will be added here dynamically -->
+                    </ul>
+                </div>
+
+                <!-- Simulation Controls and Path Color -->
+                <div class="p-6 bg-gray-800 rounded-lg shadow-sm flex items-center justify-between">
+                    <div>
+                        <label for="pathColor" class="block text-sm font-medium text-gray-200">Path Color</label>
+                        <input type="color" id="pathColor" value="#22c55e" class="mt-1 h-10 w-10 rounded-full border-gray-300 shadow-sm">
+                    </div>
+                </div>
+            </div>
+            <!-- Simulation Canvas and Output -->
+            <div class="flex-grow flex-1 w-full lg:w-[80%] flex flex-col justify-start items-start gap-4">
+                <canvas id="robotCanvas" class="flex-grow"></canvas>
+                <div class="w-full flex flex-col items-center gap-4">
+                    <button id="startSimulationBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-md shadow-lg transition duration-300 transform hover:scale-105 w-full">
+                        Start Simulation
+                    </button>
+                    <div class="w-full p-6 bg-gray-800 rounded-lg shadow-sm">
+                        <h2 class="text-xl font-semibold mb-4 text-gray-200">Generated Python Code</h2>
+                        <div id="codeOutput" class="code-output p-4">
+                            Your generated code will appear here.
+                        </div>
+                        <button id="copyCodeBtn" class="mt-4 w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300">
+                            Copy Code
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM element references
+        const canvas = document.getElementById('robotCanvas');
+        const ctx = canvas.getContext('2d');
+        const missionNameInput = document.getElementById('missionName');
+        const startXInput = document.getElementById('startX');
+        const startYInput = document.getElementById('startY');
+        const startAngleInput = document.getElementById('startAngle');
+        const robotWidthInput = document.getElementById('robotWidth');
+        const robotHeightInput = document.getElementById('robotHeight');
+        const waypointXInput = document.getElementById('waypointX');
+        const waypointYInput = document.getElementById('waypointY');
+        const moveDistanceInput = document.getElementById('moveDistance');
+        const rotateAngleInput = document.getElementById('rotateAngle');
+        const addWaypointBtn = document.getElementById('addWaypointBtn');
+        const addMoveBtn = document.getElementById('addMoveBtn');
+        const addRotateBtn = document.getElementById('addRotateBtn');
+        const startSimulationBtn = document.getElementById('startSimulationBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const instructionList = document.getElementById('instructionList');
+        const codeOutput = document.getElementById('codeOutput');
+        const copyCodeBtn = document.getElementById('copyCodeBtn');
+        const pathColorInput = document.getElementById('pathColor');
+
+        // Image for the background
+        const backgroundImage = new Image();
+        backgroundImage.crossOrigin = "anonymous";
+        backgroundImage.src = "https://lh4.googleusercontent.com/oJJDmJHEHUi7Sxt2Pf0MHzZmXWOk17RQxm6Qx_igs3fxLnf1vo_vEwHymrpRF96QvzOGNum1US2dIPZGcPQXNLP-zecWMel5rU10x0hGWYI_QgkPqvqdxf4wcokNNznYdALu0h4IOiFUK3JqkzGLT-yKmdlr63kK6pAoSPSzYz6TUr9x2Yjctg=w1280";
+        let isImageLoaded = false;
+
+        // Table and Canvas Dimensions
+        const TABLE_WIDTH_MM = 2362;
+        const TABLE_HEIGHT_MM = 1143;
+        const TABLE_ASPECT_RATIO = TABLE_WIDTH_MM / TABLE_HEIGHT_MM;
+        
+        // Robot state
+        let robot = {
+            x: 0,
+            y: 0,
+            angle: 0, // In radians
+            speed: 5 // Pixels per frame
+        };
+
+        // Instructions
+        let instructions = [];
+        let simulationInstructions = []; // A copy of the instructions for the simulation run
+        let currentInstructionIndex = 0;
+        let isSimulating = false;
+        let pathHistory = [];
+        let dragSrcEl = null;
+
+        /**
+         * Calculates the correct canvas dimensions to maintain aspect ratio within its parent container.
+         * @returns {{width: number, height: number}} The calculated dimensions.
+         */
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            let containerWidth = container.clientWidth;
+            let containerHeight = container.clientHeight;
+            let calculatedWidth, calculatedHeight;
+
+            const containerAspectRatio = containerWidth / containerHeight;
+
+            if (containerAspectRatio > TABLE_ASPECT_RATIO) {
+                calculatedHeight = containerHeight;
+                calculatedWidth = calculatedHeight * TABLE_ASPECT_RATIO;
+            } else {
+                calculatedWidth = containerWidth;
+                calculatedHeight = calculatedWidth / TABLE_ASPECT_RATIO;
+            }
+            
+            canvas.width = calculatedWidth;
+            canvas.height = calculatedHeight;
+        }
+
+        /**
+         * Converts cm coordinates to canvas pixels.
+         * @param {number} cm - The value in centimeters.
+         * @returns {number} The converted value in pixels.
+         */
+        function cmToPixels(cm) {
+            const PIXELS_PER_CM = canvas.width / (TABLE_WIDTH_MM / 10);
+            return cm * PIXELS_PER_CM;
+        }
+
+        /**
+         * Converts canvas coordinates to table coordinates (centered).
+         * @param {number} x - The canvas x coordinate.
+         * @param {number} y - The canvas y coordinate.
+         * @returns {{x: number, y: number}} The converted coordinates in cm.
+         */
+        function toTableCoords(x, y) {
+            const PIXELS_PER_CM = canvas.width / (TABLE_WIDTH_MM / 10);
+            return {
+                x: (x - canvas.width / 2) / PIXELS_PER_CM,
+                y: -(y - canvas.height / 2) / PIXELS_PER_CM
+            };
+        }
+
+        /**
+         * Converts table coordinates to canvas coordinates.
+         * @param {number} x - The table x coordinate in cm.
+         * @param {number} y - The table y coordinate in cm.
+         * @returns {{x: number, y: number}} The converted coordinates in pixels.
+         */
+        function toCanvasCoords(x, y) {
+            const PIXELS_PER_CM = canvas.width / (TABLE_WIDTH_MM / 10);
+            return {
+                x: x * PIXELS_PER_CM + canvas.width / 2,
+                y: -y * PIXELS_PER_CM + canvas.height / 2
+            };
+        }
+
+        /**
+         * Draws a scaled grid and axes on the canvas.
+         */
+        function drawGrid() {
+            ctx.fillStyle = '#f9fafb';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const gridSpacingCm = 10; // Draw a grid every 10cm
+            const PIXELS_PER_CM = canvas.width / (TABLE_WIDTH_MM / 10);
+            const gridSpacingPixels = gridSpacingCm * PIXELS_PER_CM;
+
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 1;
+
+            // Draw vertical grid lines
+            for (let x = -Math.floor(TABLE_WIDTH_MM / 20) * gridSpacingCm; x <= Math.floor(TABLE_WIDTH_MM / 20) * gridSpacingCm; x += gridSpacingCm) {
+                const canvasX = toCanvasCoords(x, 0).x;
+                ctx.beginPath();
+                ctx.moveTo(canvasX, 0);
+                ctx.lineTo(canvasX, canvas.height);
+                ctx.stroke();
+            }
+
+            // Draw horizontal grid lines
+            for (let y = -Math.floor(TABLE_HEIGHT_MM / 20) * gridSpacingCm; y <= Math.floor(TABLE_HEIGHT_MM / 20) * gridSpacingCm; y += gridSpacingCm) {
+                const canvasY = toCanvasCoords(0, y).y;
+                ctx.beginPath();
+                ctx.moveTo(0, canvasY);
+                ctx.lineTo(canvas.width, canvasY);
+                ctx.stroke();
+            }
+
+            // Draw axis lines
+            ctx.strokeStyle = '#9ca3af';
+            ctx.lineWidth = 2;
+            const origin = toCanvasCoords(0, 0);
+            ctx.beginPath();
+            ctx.moveTo(origin.x, 0);
+            ctx.lineTo(origin.x, canvas.height);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, origin.y);
+            ctx.lineTo(canvas.width, origin.y);
+            ctx.stroke();
+        }
+
+        /**
+         * Draws the background on the canvas, with a grid fallback.
+         */
+        function drawTable() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (isImageLoaded) {
+                const imgWidth = backgroundImage.naturalWidth;
+                const imgHeight = backgroundImage.naturalHeight;
+                const imgAspect = imgWidth / imgHeight;
+                const canvasAspect = canvas.width / canvas.height;
+                let drawWidth, drawHeight, drawX, drawY;
+
+                if (imgAspect > canvasAspect) { // Image is wider than canvas
+                    drawHeight = canvas.height;
+                    drawWidth = imgWidth * (canvas.height / imgHeight);
+                    drawX = (canvas.width - drawWidth) / 2;
+                    drawY = 0;
+                } else { // Image is taller than or same aspect as canvas
+                    drawWidth = canvas.width;
+                    drawHeight = imgHeight * (canvas.width / imgWidth);
+                    drawX = 0;
+                    drawY = (canvas.height - drawHeight) / 2;
+                }
+                ctx.drawImage(backgroundImage, drawX, drawY, drawWidth, drawHeight);
+            } else {
+                drawGrid();
+            }
+        }
+
+        /**
+         * Draws the robot on the canvas.
+         */
+        function drawRobot() {
+            const pos = toCanvasCoords(robot.x, robot.y);
+            const w = cmToPixels(parseFloat(robotWidthInput.value));
+            const h = cmToPixels(parseFloat(robotHeightInput.value));
+
+            ctx.save();
+            ctx.translate(pos.x, pos.y);
+            ctx.rotate(robot.angle);
+
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillRect(-w/2, -h/2, w, h);
+
+            ctx.strokeStyle = '#1e40af';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -h/2);
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+
+        /**
+         * Draws the actual path the robot has taken.
+         */
+        function drawPathHistory() {
+            if (pathHistory.length < 2) return;
+            ctx.strokeStyle = pathColorInput.value;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            const startPos = toCanvasCoords(pathHistory[0].x, pathHistory[0].y);
+            ctx.moveTo(startPos.x, startPos.y);
+            
+            for (let i = 1; i < pathHistory.length; i++) {
+                const pos = toCanvasCoords(pathHistory[i].x, pathHistory[i].y);
+                ctx.lineTo(pos.x, pos.y);
+            }
+            ctx.stroke();
+        }
+
+        /**
+         * Draws all instructions and the planned path.
+         */
+        function drawInstructions() {
+            // Draw planned path (dashed)
+            if (instructions.length > 0) {
+                ctx.strokeStyle = '#9ca3af';
+                ctx.setLineDash([5, 5]); // Dashed line
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                const startPos = toCanvasCoords(startXInput.value, startYInput.value);
+                ctx.moveTo(startPos.x, startPos.y);
+
+                let current_x = parseFloat(startXInput.value);
+                let current_y = parseFloat(startYInput.value);
+                let current_angle_rad = parseFloat(startAngleInput.value) * Math.PI / 180;
+
+                instructions.forEach(instruction => {
+                    let next_x = current_x;
+                    let next_y = current_y;
+                    
+                    if (instruction.type === 'waypoint') {
+                        const deltaX = instruction.x - current_x;
+                        const deltaY = instruction.y - current_y;
+                        const targetAngleRad = Math.atan2(deltaY, deltaX);
+                        current_angle_rad = targetAngleRad;
+                        next_x = instruction.x;
+                        next_y = instruction.y;
+                    } else if (instruction.type === 'move') {
+                        next_x += instruction.distance * Math.sin(current_angle_rad);
+                        next_y += instruction.distance * Math.cos(current_angle_rad);
+                    } else if (instruction.type === 'rotate') {
+                         current_angle_rad += instruction.angle * Math.PI / 180;
+                    }
+                    
+                    const pos = toCanvasCoords(next_x, next_y);
+                    ctx.lineTo(pos.x, pos.y);
+                    current_x = next_x;
+                    current_y = next_y;
+                });
+                ctx.stroke();
+                ctx.setLineDash([]); // Reset line dash
+            }
+
+            // Draw waypoints
+            instructions.forEach(instruction => {
+                if (instruction.type === 'waypoint') {
+                    const pos = toCanvasCoords(instruction.x, instruction.y);
+                    ctx.fillStyle = '#ef4444';
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, 5, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            });
+        }
+
+        /**
+         * Main drawing function.
+         */
+        function draw() {
+            drawTable();
+            drawPathHistory();
+            drawInstructions();
+            drawRobot();
+        }
+
+        /**
+         * Generates the Python code for the robot's movements.
+         */
+        function generatePythonCode() {
+            const missionName = missionNameInput.value || 'Robot Mission';
+            const startX = parseFloat(startXInput.value).toFixed(2);
+            const startY = parseFloat(startYInput.value).toFixed(2);
+            const startAngle = parseFloat(startAngleInput.value).toFixed(2);
+            const defaultSpeed = 100;
+
+            let code = `
+# This code was automatically generated for mission: ${missionName}
+# It assumes a library named 'robot_lib' with asynchronous commands for movement and rotation.
+
+import math
+import asyncio
+import time
+
+# A placeholder library for robot commands. Replace with your actual robot control library.
+async def move(distance_cm, speed):
+    """Asynchronously moves the robot forward by the specified distance in cm at a given speed."""
+    print(f"Moving forward by {distance_cm:.2f} cm at speed {speed}.")
+    await asyncio.sleep(distance_cm / speed)
+    
+async def rotate(angle_deg, speed):
+    """Asynchronously rotates the robot by a specific angle in degrees (positive for left, negative for right) at a given speed."""
+    print(f"Rotating by {angle_deg:.2f} degrees at speed {speed}.")
+    await asyncio.sleep(abs(angle_deg) / speed)
+
+async def main():
+    print(f"Starting mission: ${missionName}")
+    print(f"Initial Position: ({startX}, {startY}) cm")
+    print(f"Initial Angle: {startAngle} degrees")
+    print("---------------------------------------")
+
+`;
+            let current_x = parseFloat(startXInput.value);
+            let current_y = parseFloat(startYInput.value);
+            let current_angle_deg = parseFloat(startAngleInput.value);
+
+            instructions.forEach((instruction) => {
+                if (instruction.type === 'waypoint') {
+                    const deltaX = instruction.x - current_x;
+                    const deltaY = instruction.y - current_y;
+                    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                    const targetAngleRad = Math.atan2(deltaY, deltaX);
+                    const targetAngleDeg = targetAngleRad * 180 / Math.PI;
+                    let angleDiff = targetAngleDeg - current_angle_deg;
+                    if (angleDiff > 180) angleDiff -= 360;
+                    if (angleDiff < -180) angleDiff += 360;
+                    
+                    if (Math.abs(angleDiff) > 1) { // A small tolerance for floating point errors
+                        code += `    await rotate(${angleDiff.toFixed(2)}, ${defaultSpeed})\n`;
+                        current_angle_deg += angleDiff;
+                    }
+                    
+                    code += `    await move(${distance.toFixed(2)}, ${defaultSpeed})\n`;
+                    current_x = instruction.x;
+                    current_y = instruction.y;
+                    current_angle_deg = targetAngleDeg;
+
+                } else if (instruction.type === 'move') {
+                    const distance = instruction.distance;
+                    code += `    await move(${distance.toFixed(2)}, ${defaultSpeed})\n`;
+                    current_x += distance * Math.sin(current_angle_deg * Math.PI / 180);
+                    current_y += distance * Math.cos(current_angle_deg * Math.PI / 180);
+
+                } else if (instruction.type === 'rotate') {
+                    const angle = instruction.angle;
+                    code += `    await rotate(${angle.toFixed(2)}, ${defaultSpeed})\n`;
+                    current_angle_deg += angle;
+                }
+            });
+            
+            code += `
+    print("---------------------------------------")
+    print("Mission complete. All instructions executed.")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+`;
+            codeOutput.textContent = code;
+        }
+
+        /**
+         * The main simulation loop.
+         */
+        function simulateMovement() {
+            if (!isSimulating) {
+                return;
+            }
+            
+            // Add current robot position to history
+            pathHistory.push({ x: robot.x, y: robot.y });
+
+            if (currentInstructionIndex >= simulationInstructions.length) {
+                isSimulating = false;
+                startSimulationBtn.textContent = 'Start Simulation';
+                generatePythonCode();
+                return;
+            }
+
+            const instruction = simulationInstructions[currentInstructionIndex];
+
+            if (instruction.type === 'waypoint') {
+                const targetWaypoint = {
+                    x: instruction.x,
+                    y: instruction.y
+                };
+                
+                // Calculate vector to target
+                const dx = targetWaypoint.x - robot.x;
+                const dy = targetWaypoint.y - robot.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // Calculate target angle
+                const targetAngle = Math.atan2(dy, dx);
+                
+                // Update robot's angle gradually
+                const angleDiff = targetAngle - robot.angle;
+                const angleStep = 0.05; // radians per frame
+                
+                // If the robot is not at the target, move it
+                if (distance > 0.5) { // Use a small tolerance
+                    // Rotate towards the target angle
+                    if (Math.abs(angleDiff) > angleStep) {
+                        robot.angle += Math.sign(angleDiff) * angleStep;
+                    } else {
+                        robot.angle = targetAngle;
+                    }
+                    
+                    // Move the robot forward based on its angle
+                    const moveStep = robot.speed / (canvas.width / (TABLE_WIDTH_MM / 10));
+                    robot.x += Math.sin(robot.angle) * moveStep;
+                    robot.y += Math.cos(robot.angle) * moveStep;
+                } else {
+                    // Robot is close enough, snap to target and move to next instruction
+                    robot.x = targetWaypoint.x;
+                    robot.y = targetWaypoint.y;
+                    currentInstructionIndex++;
+                }
+            } else if (instruction.type === 'move') {
+                const distanceLeft = instruction.distance;
+                const moveStep = robot.speed / (canvas.width / (TABLE_WIDTH_MM / 10));
+                if (distanceLeft > moveStep) {
+                    robot.x += Math.sin(robot.angle) * moveStep;
+                    robot.y += Math.cos(robot.angle) * moveStep;
+                    instruction.distance -= moveStep;
+                } else {
+                    robot.x += Math.sin(robot.angle) * distanceLeft;
+                    robot.y += Math.cos(robot.angle) * distanceLeft;
+                    currentInstructionIndex++;
+                }
+
+            } else if (instruction.type === 'rotate') {
+                const angleLeft = instruction.angle;
+                const angleStep = 2; // degrees per frame
+                const angleStepRad = angleStep * Math.PI / 180;
+                
+                if (Math.abs(angleLeft) > angleStep) {
+                    robot.angle += Math.sign(angleLeft) * angleStepRad;
+                    instruction.angle -= Math.sign(angleLeft) * angleStep;
+                } else {
+                    robot.angle += angleLeft * Math.PI / 180;
+                    currentInstructionIndex++;
+                }
+            }
+            draw();
+            requestAnimationFrame(simulateMovement);
+        }
+
+        /**
+         * Renders the instruction list in the UI.
+         */
+        function renderInstructionList() {
+            instructionList.innerHTML = '';
+            instructions.forEach((instruction, index) => {
+                const listItem = document.createElement('li');
+                listItem.className = 'instruction-item';
+                listItem.draggable = true;
+                listItem.dataset.index = index;
+                
+                let text = `Instruction ${index + 1}: `;
+                if (instruction.type === 'waypoint') {
+                    text += `Waypoint (${instruction.x.toFixed(2)}, ${instruction.y.toFixed(2)}) cm`;
+                } else if (instruction.type === 'move') {
+                    text += `Move ${instruction.distance.toFixed(2)} cm`;
+                } else if (instruction.type === 'rotate') {
+                    text += `Rotate ${instruction.angle.toFixed(2)} degrees`;
+                }
+                
+                listItem.innerHTML = `
+                    <span>${text}</span>
+                    <div class="instruction-controls">
+                        <button class="edit-btn" data-index="${index}">Edit</button>
+                        <button class="delete-btn" data-index="${index}">Delete</button>
+                    </div>
+                `;
+                
+                instructionList.appendChild(listItem);
+            });
+            addDragListeners();
+        }
+
+        function addDragListeners() {
+            const items = instructionList.querySelectorAll('.instruction-item');
+            items.forEach(item => {
+                item.addEventListener('dragstart', handleDragStart);
+                item.addEventListener('dragover', handleDragOver);
+                item.addEventListener('dragleave', handleDragLeave);
+                item.addEventListener('drop', handleDrop);
+                item.addEventListener('dragend', handleDragEnd);
+                
+                const editBtn = item.querySelector('.edit-btn');
+                editBtn.addEventListener('click', handleEditInstruction);
+
+                const deleteBtn = item.querySelector('.delete-btn');
+                deleteBtn.addEventListener('click', handleDeleteInstruction);
+            });
+        }
+
+        function handleDragStart(e) {
+            this.style.opacity = '0.4';
+            dragSrcEl = this;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (e.target.classList.contains('instruction-item')) {
+                e.target.style.borderTop = '2px solid #22c55e';
+            }
+        }
+
+        function handleDragLeave(e) {
+            e.target.style.borderTop = '';
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.target.style.borderTop = '';
+            if (dragSrcEl !== this) {
+                const dragIndex = parseInt(dragSrcEl.dataset.index);
+                const dropIndex = parseInt(this.dataset.index);
+                
+                const [removed] = instructions.splice(dragIndex, 1);
+                instructions.splice(dropIndex, 0, removed);
+                
+                renderInstructionList();
+                draw();
+            }
+        }
+
+        function handleDragEnd(e) {
+            this.style.opacity = '1';
+            dragSrcEl = null;
+        }
+
+        function handleEditInstruction(e) {
+            const index = e.target.dataset.index;
+            const instruction = instructions[index];
+            const listItem = e.target.closest('li');
+            
+            let formHtml = '';
+            if (instruction.type === 'waypoint') {
+                formHtml = `
+                    <form class="edit-form flex items-center gap-2" data-index="${index}">
+                        <input type="number" name="x" value="${instruction.x.toFixed(2)}" step="0.01">
+                        <input type="number" name="y" value="${instruction.y.toFixed(2)}" step="0.01">
+                        <button type="submit">Save</button>
+                    </form>
+                `;
+            } else if (instruction.type === 'move') {
+                formHtml = `
+                    <form class="edit-form flex items-center gap-2" data-index="${index}">
+                        <input type="number" name="distance" value="${instruction.distance.toFixed(2)}" step="0.01">
+                        <button type="submit">Save</button>
+                    </form>
+                `;
+            } else if (instruction.type === 'rotate') {
+                formHtml = `
+                    <form class="edit-form flex items-center gap-2" data-index="${index}">
+                        <input type="number" name="angle" value="${instruction.angle.toFixed(2)}" step="0.01">
+                        <button type="submit">Save</button>
+                    </form>
+                `;
+            }
+            
+            listItem.innerHTML = formHtml;
+            listItem.querySelector('form').addEventListener('submit', handleSaveEdit);
+        }
+
+        function handleSaveEdit(e) {
+            e.preventDefault();
+            const index = e.target.dataset.index;
+            const instruction = instructions[index];
+
+            if (instruction.type === 'waypoint') {
+                instruction.x = parseFloat(e.target.elements.x.value);
+                instruction.y = parseFloat(e.target.elements.y.value);
+            } else if (instruction.type === 'move') {
+                instruction.distance = parseFloat(e.target.elements.distance.value);
+            } else if (instruction.type === 'rotate') {
+                instruction.angle = parseFloat(e.target.elements.angle.value);
+            }
+            
+            renderInstructionList();
+            draw();
+        }
+
+        function handleDeleteInstruction(e) {
+            const index = e.target.dataset.index;
+            instructions.splice(index, 1);
+            renderInstructionList();
+            draw();
+        }
+
+
+        /**
+         * Adds a waypoint from user input.
+         */
+        function handleAddWaypoint() {
+            const x = parseFloat(waypointXInput.value);
+            const y = parseFloat(waypointYInput.value);
+            if (isNaN(x) || isNaN(y)) return;
+            instructions.push({ type: 'waypoint', x, y });
+            renderInstructionList();
+            draw();
+        }
+
+        /**
+         * Adds a move command from user input.
+         */
+        function handleAddMove() {
+            const distance = parseFloat(moveDistanceInput.value);
+            if (isNaN(distance)) return;
+            instructions.push({ type: 'move', distance });
+            renderInstructionList();
+        }
+        
+        /**
+         * Adds a rotate command from user input.
+         */
+        function handleAddRotate() {
+            const angle = parseFloat(rotateAngleInput.value);
+            if (isNaN(angle)) return;
+            instructions.push({ type: 'rotate', angle });
+            renderInstructionList();
+        }
+
+        /**
+         * Resets the simulation state.
+         */
+        function handleReset() {
+            instructions = [];
+            pathHistory = [];
+            robot = { 
+                x: parseFloat(startXInput.value), 
+                y: parseFloat(startYInput.value), 
+                angle: parseFloat(startAngleInput.value) * Math.PI / 180, 
+                speed: 5
+            };
+            isSimulating = false;
+            currentInstructionIndex = 0;
+            startSimulationBtn.textContent = 'Start Simulation';
+            instructionList.innerHTML = '';
+            codeOutput.textContent = 'Your generated code will appear here.';
+            draw();
+        }
+
+        /**
+         * Starts the simulation.
+         */
+        function handleStartSimulation() {
+            // Reset the robot's position and path, but not the instructions
+            robot = { 
+                x: parseFloat(startXInput.value), 
+                y: parseFloat(startYInput.value), 
+                angle: parseFloat(startAngleInput.value) * Math.PI / 180, 
+                speed: 5
+            };
+            pathHistory = [];
+            currentInstructionIndex = 0;
+            
+            // Create a deep copy of instructions to avoid modifying the original list
+            simulationInstructions = JSON.parse(JSON.stringify(instructions));
+            
+            if (simulationInstructions.length === 0) {
+                return;
+            }
+            
+            isSimulating = true;
+            startSimulationBtn.textContent = 'Simulating...';
+            codeOutput.textContent = 'Generating code...';
+            simulateMovement();
+        }
+
+        /**
+         * Copies the generated Python code to the clipboard.
+         */
+        function handleCopyCode() {
+            try {
+                const codeText = codeOutput.textContent;
+                const textarea = document.createElement('textarea');
+                textarea.value = codeText;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                copyCodeBtn.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyCodeBtn.textContent = 'Copy Code';
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+            }
+        }
+        
+        // Event listeners
+        addWaypointBtn.addEventListener('click', handleAddWaypoint);
+        addMoveBtn.addEventListener('click', handleAddMove);
+        addRotateBtn.addEventListener('click', handleAddRotate);
+        startSimulationBtn.addEventListener('click', handleStartSimulation);
+        resetBtn.addEventListener('click', handleReset);
+        copyCodeBtn.addEventListener('click', handleCopyCode);
+        
+        // Initial draw and state setup
+        handleReset();
+
+        // Wait for the background image to load before initializing the canvas
+        backgroundImage.onload = () => {
+            isImageLoaded = true;
+            resizeCanvas();
+            draw();
+        };
+
+        backgroundImage.onerror = () => {
+             console.error("Failed to load background image.");
+             isImageLoaded = false;
+             resizeCanvas();
+             draw(); // Draw grid as fallback
+        };
+
+        // Resize the canvas when the window size changes
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            draw();
+        });
+
+        // Initial resize for the first load
+        window.onload = () => {
+            resizeCanvas();
+            draw();
+        };
+
+    </script>
+</body>
+</html>
