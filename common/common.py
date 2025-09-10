@@ -1,3 +1,7 @@
+"""
+Common functions for the SPIKE Prime robot
+"""
+
 from hub import port, light_matrix, motion_sensor, sound
 import hub
 import motor
@@ -41,13 +45,13 @@ async def drive(distance, speed):
     await motor_pair.move_for_degrees(motor_pair.PAIR_1, degreesForDistance(distance), 0, velocity=speed, stop=motor.BRAKE, acceleration=1000, deceleration=1000)
 
 async def rotateRightArm(degrees, speed):
-    await motor.run_for_degrees(port.C, degrees * 3, speed)
-
-async def rotateLeftArm(degrees, speed):
     await motor.run_for_degrees(port.D, degrees * 3, speed)
 
+async def rotateLeftArm(degrees, speed):
+    await motor.run_for_degrees(port.C, degrees * 3, speed)
+
 async def rotateCenterArm(degrees, speed):
-    await motor.run_for_degrees(port.C, degrees * math.ceil(4.9), speed)
+    await motor.run_for_degrees(port.D, degrees * math.ceil(4.9), speed)
 
 async def resetArmRotation():
     global _left_arm_start_angle, _right_arm_start_angle, _center_arm_start_angle
@@ -113,42 +117,12 @@ async def pivot_turn(robot_degrees, motor_speed):
         await motor_pair.move_for_degrees(motor_pair.PAIR_1, motor_degrees, -50, velocity=motor_speed)
 
 def all_done():
-    return (motor.velocity(port.C) is 0 and motor.velocity(port.D) is 0)
+    return (motor.velocity(port.C) == 0 and motor.velocity(port.D) == 0)
 
-async def main():
-    # initialize the motor pair for wheels and save motor positions. Do this every time.
+async def init():
+    # Initialize the motor pair for wheels and save motor positions. Do this every time.
     await setupMotors()
-    # for repeating infinitly use while True:
-    while True:
-        await drive(15, 660)
-        await drive(-15, 660)
-        await rotateLeftArm(360, 660)
-        await rotateRightArm(360, 660)
-        await asyncio.sleep(1)
-        await rotateDegrees(180, 300)
-        #await rotateCenterArm(360, 660)
-        #await spin_turn(360, 400)
-        a = rotateLeftArm(180, 660)
-        b = rotateRightArm(180, 660)
-        # run both the functions together
-        runloop.run(*[a,b])
-        #await runloop.until(all_done)
-        await rotateDegrees(-180, 300)
-        #await spin_turn(360, 400)
-        # wait until both motors have stopped
-        await runloop.until(all_done)
-        await rotateDegrees(180, 300)
-        #await rotateDegrees(180, 300)
-        a = rotateLeftArm(180, 660)
-        b = rotateRightArm(180, 660)
-        c = rotateDegrees(-180, 300)
-        # run the functions together
-        runloop.run(*[a,b, c])
-        #await asyncio.gather(rotateLeftArm(90, 660), rotateRightArm(90, 660))
-        #await spin_turn(720, 400)
-        #await pivot_turn(720, 400)
-        # reset the arms before finishing so they are ready to go again.
-        await resetArmRotation()
-        await sound.beep(400, 250)
+    await sound.beep(400, 250)
 
-runloop.run(main())
+async def beep(frequency, duration):
+    await sound.beep(frequency, duration)
