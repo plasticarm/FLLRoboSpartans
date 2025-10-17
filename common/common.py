@@ -2,7 +2,7 @@
 Common functions for the SPIKE Prime robot
 """
 
-from hub import port, light_matrix, motion_sensor, sound
+from hub import port, light_matrix, motion_sensor, sound, button
 import hub
 import motor
 import runloop, motor_pair, sys, math, asyncio
@@ -126,3 +126,108 @@ async def init():
 
 async def beep(frequency, duration):
     await sound.beep(frequency, duration)
+
+# --- Music ---
+
+# --- Note table (common ones used in theme) ---
+NOTES = {
+    # --- Octave 3 ---
+    "C3": 131,"C#3": 139,"Db3": 139,
+    "D3": 147,"D#3": 156,"Eb3": 156,
+    "E3": 165,"F3": 175,"F#3": 185,"Gb3": 185,
+    "G3": 196,"G#3": 208,"Ab3": 208,
+    "A3": 220,"A#3": 233,"Bb3": 233,
+    "B3": 247,
+
+    # --- Octave 4 ---
+    "C4": 262,"C#4": 277,"Db4": 277,
+    "D4": 294,"D#4": 311,"Eb4": 311,
+    "E4": 330,"F4": 349,"F#4": 370,"Gb4": 370,
+    "G4": 392,"G#4": 415,"Ab4": 415,
+    "A4": 440,"A#4": 466,"Bb4": 466,
+    "B4": 494,
+
+    # --- Octave 5 ---
+    "C5": 523,"C#5": 554,"Db5": 554,
+    "D5": 587,"D#5": 622,"Eb5": 622,
+    "E5": 659,"F5": 698,"F#5": 740,"Gb5": 740,
+    "G5": 784,"G#5": 831,"Ab5": 831,
+    "A5": 880,"A#5": 932,"Bb5": 932,
+    "B5": 988
+}
+
+# --- Timing setup ---
+BPM = 112
+QUARTER = int(60000 / BPM)# ms for quarter note
+SIXTEENTH = QUARTER // 4
+EIGHTH = QUARTER // 2
+DOTTED_QUARTER = QUARTER + EIGHTH
+HALF = QUARTER * 2
+
+# --- Song definitions ---
+RAIDERS = [
+    ("E3", EIGHTH), ("F3", EIGHTH), 
+    ("G3", EIGHTH), ("C4", HALF), ("D3", EIGHTH), ("E3", EIGHTH), 
+    ("F3", HALF), ("G3", EIGHTH), ("A3", EIGHTH),
+    ("B4", EIGHTH), ("F4", HALF), ("A3", EIGHTH), ("B4", EIGHTH),
+    ("C4", QUARTER), ("D4", QUARTER), ("E4", QUARTER), ("F4", EIGHTH), ("E3", EIGHTH),
+    ("G2", EIGHTH),("C3", EIGHTH), ("D3", EIGHTH), ("E3", EIGHTH),     
+    ("F4", HALF), ("G3", EIGHTH), ("G3", EIGHTH), 
+    ("E4", QUARTER), ("D4", EIGHTH), ("G3", EIGHTH), ("E4", QUARTER), ("D4", EIGHTH),("G3", EIGHTH),
+    ("E4", QUARTER), ("D4", EIGHTH), ("G3", EIGHTH), ("E4", QUARTER), ("D4", EIGHTH),("G3", EIGHTH)
+]
+EMPIREMARCH = [
+    ("A4", QUARTER), ("A4", QUARTER), ("A4", QUARTER), ("F3", EIGHTH), ("C4", EIGHTH), ("A4", QUARTER), ("F3", EIGHTH), ("C4", EIGHTH), ("A4", HALF),
+    ("E4", QUARTER), ("E4", QUARTER), ("E4", QUARTER), ("F4", EIGHTH), ("C4", EIGHTH), ("A3", QUARTER), ("F3", EIGHTH), ("C4", EIGHTH), ("A4", HALF),
+    ("A4", QUARTER), ("A4", QUARTER), ("A4", QUARTER), ("F3", EIGHTH), ("C4", EIGHTH), ("A4", QUARTER), ("F3", EIGHTH), ("C4", EIGHTH), ("A4", HALF),
+    ("E4", QUARTER), ("E4", QUARTER), ("E4", QUARTER), ("F4", EIGHTH), ("C4", EIGHTH), ("A3", QUARTER), ("F3", EIGHTH), ("C4", EIGHTH), ("A4", HALF),
+    ("C5", QUARTER), ("C5", QUARTER), ("C5", QUARTER), ("A4", EIGHTH), ("F4", EIGHTH), ("F4", DOTTED_QUARTER), ("E4", EIGHTH), ("D4", EIGHTH), ("B3", HALF),
+    ("A4", QUARTER), ("A4", QUARTER), ("A4", QUARTER), ("F3", EIGHTH), ("C4", EIGHTH), ("A4", QUARTER), ("F3", EIGHTH), ("C4", EIGHTH), ("A4", HALF),
+    ("E4", QUARTER), ("E4", QUARTER), ("E4", QUARTER), ("F4", EIGHTH), ("C4", EIGHTH), ("A3", QUARTER), ("F3", EIGHTH), ("C4", EIGHTH), ("A4", HALF)]
+
+SONGCHOICE = RAIDERS
+PLAY_SONG = False
+# --- END MUSIC ---
+
+# --- Async Tasks ---
+
+async def button_listener():
+    """Monitors buttons and sets song choice."""
+    global SONGCHOICE, PLAY_SONG
+
+    while True:
+        if button.pressed(button.LEFT):
+            PLAY_SONG = False# stop any current song
+            SONGCHOICE = RAIDERS
+            PLAY_SONG = True
+
+            # Wait until button released
+            while button.pressed(button.LEFT):
+                await runloop.sleep_ms(50)
+
+        elif button.pressed(button.RIGHT):
+            PLAY_SONG = False
+            SONGCHOICE = EMPIREMARCH
+            PLAY_SONG = True
+
+            while button.pressed(button.RIGHT):
+                await runloop.sleep_ms(50)
+
+        await runloop.sleep_ms(50)
+
+async def play_music():
+    """Plays whichever song is selected."""
+    global SONGCHOICE, PLAY_SONG
+
+    while True:
+        if PLAY_SONG and SONGCHOICE:
+            for note, dur in SONGCHOICE:
+                if not PLAY_SONG:
+                    break
+                freq = NOTES.get(note, 440)
+                await sound.beep(freq, dur)
+                await runloop.sleep_ms(30)
+            # loop the song
+        await runloop.sleep_ms(50)
+        
+# --- End Async Tasks ---
