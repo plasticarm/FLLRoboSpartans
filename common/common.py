@@ -60,19 +60,26 @@ async def resetArmRotation():
     runloop.run(*[a,b])
 
 # Function that returns true when the yaw has turned past stop angle
+# Function that returns true when the yaw has turned past stop angle
 def turn_done():
     global degrees_to_turn, stop_angle
     # convert tuple decidegree into the same format as in app and blocks
     yaw_angle = motion_sensor.tilt_angles()[0] * -0.1
+    
     # if we need to turn less than 180 degrees, check the absolute values
     if (abs(degrees_to_turn) < 180):
-        return abs(yaw_angle) > stop_angle
+        # FIX: Check for >= (greater than or equal)
+        return abs(yaw_angle) >= stop_angle
+        
     # If we need to turn more than 180 degrees, compute the yaw angle we need to stop at.
     if degrees_to_turn >= 0:
         # moving clockwise # The adjusted yaw angle is positive until we cross 180. # Then, we are negative numbers counting up.
-        return yaw_angle < 0 and yaw_angle > stop_angle
-    else: # The adjusted yaw angle is negative until we cross 180 # Then, we are positive numbers counting down.
-        return yaw_angle > 0 and yaw_angle < stop_angle
+        # FIX: Check for >= stop_angle
+        return yaw_angle < 0 and yaw_angle >= stop_angle
+    else: 
+        # moving counter-clockwise # The adjusted yaw angle is negative until we cross 180 # Then, we are positive numbers counting down.
+        # FIX: Check for <= stop_angle
+        return yaw_angle > 0 and yaw_angle <= stop_angle
 
 # basic rotation of robot with accuracy as priority
 async def rotateDegrees(degrees, speed):
