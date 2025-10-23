@@ -5,14 +5,16 @@ setupMotors()
 resetYaw()
 degreesForDistance(distance_cm)
 drive(distance, speed)
+rotateDegrees(degrees, speed)
+accurateRotateDegrees(degrees, speed)
+spin_turn(robot_degrees, motor_speed)
+pivot_turn(robot_degrees, motor_speed)
+turn_done()
 rotateRightArm(degrees, speed)
 rotateLeftArm(degrees, speed)
 rotateCenterArm(degrees, speed)
 resetArmRotation()
-turn_done()
-rotateDegrees(degrees, speed)
-spin_turn(robot_degrees, motor_speed)
-pivot_turn(robot_degrees, motor_speed)
+reset()
 all_done()
 beep(frequency, duration)
 """
@@ -35,9 +37,22 @@ async def missionA():
     await rotateLeftArm(90, 50)  # Rotate left arm 90 degrees
     await beep(1000, 500)  # Beep at frequency 1000 Hz for 500 ms
 
+# Your code here
+async def missionB():
+    # Example mission code. For doing multiple missions break missions into separate functions.
+    await drive(30, 50)  # Drive forward 30 cm at speed 50
+    await accurateRotateDegrees(90, 50)  # Rotate right 90 degrees at speed 50
+    await drive(20, 50)  # Drive forward 20 cm at speed 50
+    await accurateRotateDegrees(-90, 50)  # Rotate left 90 degrees at speed 50
+    await drive(10, 50)  # Drive forward 10 cm at speed 50
+    await rotateRightArm(90, 50)  # Rotate right arm 90 degrees at speed 50
+    await rotateLeftArm(90, 50)  # Rotate left arm 90 degrees
+    await beep(1000, 500)  # Beep at frequency 1000 Hz for 500 ms
+
 async def missions():
     # For doing multiple missions break missions into separate functions.
     await missionA()
+    await missionB()
     # Add more missions as needed
 
 async def main():

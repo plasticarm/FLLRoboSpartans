@@ -16,6 +16,26 @@ WHEEL_CIRCUMFERENCE = 17.5
 # input must be in the same unit as WHEEL_CIRCUMFERENCE
 SPIN_CIRCUMFERENCE = TRACK * math.pi
 PIVOT_CIRCUMFERENCE = 2 * TRACK * math.pi
+# --- GYRO TURNING CONSTANTS ---
+# 1. Proportional Gain (Kp)
+# - This is the "secret sauce".
+# - If your robot is too SLOW to turn or STOPS before the target: Make Kp LARGER (e.g., 0.8)
+# - If your robot is SHAKY or OVERSHOOTS a lot: Make Kp SMALLER (e.g., 0.4)
+# - Start with 0.6 and adjust.
+# We set this so that at 180 degrees, the speed is near the top of
+# your 300-600 range (180 * 3.3 = 594).
+KP_GAIN = 5.3
+
+# 2. Minimum Move Speed (MIN_MOVE_SPEED)
+# - This is the lowest speed that will make your robot's motors move (overcomes friction).
+# - If your robot stops just short of the target: Make MIN_MOVE_SPEED slightly HIGHER (e.g., 20)
+# - If your robot is jittery and can't stop on the target: Make MIN_MOVE_SPEED LOWER (e.g., 10)
+MIN_MOVE_SPEED = 20
+
+# 3. Target Tolerance
+# - How close is "good enough"? (in degrees)
+# - 1 degree is usually fine for most applications.
+TOLERANCE = 1
 
 # ARM ROTATION TRACKING
 _left_arm_start_angle = 0
@@ -50,9 +70,13 @@ async def rotateRightArm(degrees, speed):
     await motor.run_for_degrees(port.D, -degrees * 2.5, speed)
 
 async def rotateLeftArm(degrees, speed):
+    # Calculate Compound Gear Ratios :
+    # 36/12 = 3
     await motor.run_for_degrees(port.C, degrees * 3, speed)
 
 async def rotateCenterArm(degrees, speed):
+    # Calculate Compound Gear Ratios :
+    # 36/12 * 20/12 = 5
     await motor.run_for_degrees(port.D, degrees * math.ceil(4.9), speed)
 
 async def resetArmRotation():
@@ -125,6 +149,68 @@ async def pivot_turn(robot_degrees, motor_speed):
         #pivot counter clockwise
         await motor_pair.move_for_degrees(motor_pair.PAIR_1, motor_degrees, -50, velocity=motor_speed)
 
+# --- GYRO-BASED PRECISE ROTATION FUNCTION ---
+async def gyro_turn(target_angle, max_speed):
+    # Reset the gyro's yaw angle to 0 before we start.
+    # This sets the robot's current heading as the "zero" point.
+    await resetYaw()
+
+    # Get the current angle (which should be 0)
+    current_angle = motion_sensor.tilt_angles()[0] * -0.1
+    # Calculate the error (how far we are from the target)
+    error = target_angle - current_angle
+
+    # Loop until the error is within our tolerance
+    while abs(error) > TOLERANCE:
+        # Get the latest angle
+        current_angle = motion_sensor.tilt_angles()[0] * -0.1
+
+        # Recalculate the error
+        error = target_angle - current_angle
+
+        # --- P-Controller ---
+        # Calculate the speed based on the error and our gain
+        speed = error * KP_GAIN
+        # 1. Apply Maximum Speed
+        # Cap the speed at the max_speed
+        if speed > max_speed:
+            speed = max_speed
+        elif speed < -max_speed:
+            speed = -max_speed
+
+        # 2. Apply Minimum *Movement* Speed
+        # If we are not at the target, but the calculated speed is too low
+        # to overcome friction, set it to the minimum speed to keep moving.
+        if abs(error) > TOLERANCE and abs(speed) < MIN_MOVE_SPEED:
+            if speed > 0:
+                speed = MIN_MOVE_SPEED# Force minimum speed turning right
+            else:
+                speed = -MIN_MOVE_SPEED # Force minimum speed turning left
+
+        # --- End P-Controller ---
+
+        # For a "spin turn", we run the motors in opposite directions.
+        # We cast to int() because the motor commands require whole numbers.
+        left_speed = int(speed)
+        right_speed = int(-speed)
+
+        # Start the motors
+        motor_pair.move_tank(motor_pair.PAIR_1, left_speed, right_speed)
+
+        # You MUST await a small delay in an async while-loop.
+        # Without this, your loop blocks all other code from running.
+        # This also gives the gyro time to get a new reading.
+        await asyncio.sleep_ms(10)
+    # Stop the motors when done. SMART_BRAKE seems to work better to stop more accurately.
+    motor_pair.stop(motor_pair.PAIR_1, stop=motor.SMART_BRAKE)
+
+async def accurateRotateDegrees(degrees, speed):
+    await gyro_turn(degrees, speed)
+    # brief pause to ensure robot has stopped
+    await asyncio.sleep_ms(100)
+    # final stop to ensure no movement. This uses HOLD to prevent any further movement.
+    motor_pair.stop(motor_pair.PAIR_1, stop=motor.HOLD)
+
 def all_done():
     return (motor.velocity(port.C) == 0 and motor.velocity(port.D) == 0)
 
@@ -132,6 +218,9 @@ async def init():
     # Initialize the motor pair for wheels and save motor positions. Do this every time.
     await setupMotors()
     await sound.beep(400, 250)
+
+async def reset():
+    await resetArmRotation()
 
 async def beep(frequency, duration):
     await sound.beep(frequency, duration)
