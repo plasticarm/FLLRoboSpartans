@@ -28,25 +28,25 @@ import runloop
 # Your code here
 async def missionA():
     # Example mission code. For doing multiple missions break missions into separate functions.
-    await drive(30, 50)  # Drive forward 30 cm at speed 50
-    await rotateDegrees(90, 50)  # Rotate right 90 degrees at speed 50
-    await drive(20, 50)  # Drive forward 20 cm at speed 50
-    await rotateDegrees(-90, 50)  # Rotate left 90 degrees at speed 50
-    await drive(10, 50)  # Drive forward 10 cm at speed 50
-    await rotateRightArm(90, 50)  # Rotate right arm 90 degrees at speed 50
-    await rotateLeftArm(90, 50)  # Rotate left arm 90 degrees
+    await drive(30, 500)  # Drive forward 30 cm at speed 50
+    await rotateDegrees(90, 500)  # Rotate right 90 degrees at speed 50
+    await drive(20, 500)  # Drive forward 20 cm at speed 50
+    await rotateDegrees(-90, 500)  # Rotate left 90 degrees at speed 50
+    await drive(10, 500)  # Drive forward 10 cm at speed 50
+    await rotateRightArm(90, 500)  # Rotate right arm 90 degrees at speed 50
+    await rotateLeftArm(90, 500)  # Rotate left arm 90 degrees
     await beep(1000, 500)  # Beep at frequency 1000 Hz for 500 ms
 
 # Your code here
 async def missionB():
     # Example mission code. For doing multiple missions break missions into separate functions.
-    await drive(30, 50)  # Drive forward 30 cm at speed 50
-    await accurateRotateDegrees(90, 50)  # Rotate right 90 degrees at speed 50
-    await drive(20, 50)  # Drive forward 20 cm at speed 50
-    await accurateRotateDegrees(-90, 50)  # Rotate left 90 degrees at speed 50
-    await drive(10, 50)  # Drive forward 10 cm at speed 50
-    await rotateRightArm(90, 50)  # Rotate right arm 90 degrees at speed 50
-    await rotateLeftArm(90, 50)  # Rotate left arm 90 degrees
+    await drive(30, 500)  # Drive forward 30 cm at speed 50
+    await accurateRotateDegrees(90, 500)  # Rotate right 90 degrees at speed 50
+    await drive(20, 500)  # Drive forward 20 cm at speed 50
+    await accurateRotateDegrees(-90, 500)  # Rotate left 90 degrees at speed 50
+    await drive(10, 500)  # Drive forward 10 cm at speed 50
+    await rotateRightArm(90, 500)  # Rotate right arm 90 degrees at speed 50
+    await rotateLeftArm(90, 500)  # Rotate left arm 90 degrees
     await beep(1000, 500)  # Beep at frequency 1000 Hz for 500 ms
 
 async def missions():

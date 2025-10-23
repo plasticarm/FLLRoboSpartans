@@ -1,6 +1,5 @@
-"""
-Common functions for the SPIKE Prime robot
-"""
+
+#Common functions for the SPIKE Prime robot
 
 from hub import port, light_matrix, motion_sensor, sound, button
 import hub
@@ -67,7 +66,7 @@ async def drive(distance, speed):
 async def rotateRightArm(degrees, speed):
     # Calculate Compound Gear Ratios :
     # 20/8 = 2.5
-    await motor.run_for_degrees(port.D, -degrees * 2.5, speed)
+    await motor.run_for_degrees(port.D, math.floor(-degrees * 2.5), speed)
 
 async def rotateLeftArm(degrees, speed):
     # Calculate Compound Gear Ratios :
@@ -290,7 +289,7 @@ PLAY_SONG = False
 # --- Async Tasks ---
 
 async def button_listener():
-    """Monitors buttons and sets song choice."""
+    # Monitors buttons and sets song choice.
     global SONGCHOICE, PLAY_SONG
 
     while True:
@@ -314,7 +313,7 @@ async def button_listener():
         await runloop.sleep_ms(50)
 
 async def play_music():
-    """Plays whichever song is selected."""
+    # Plays whichever song is selected.
     global SONGCHOICE, PLAY_SONG
 
     while True:
