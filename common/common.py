@@ -24,6 +24,7 @@ PIVOT_CIRCUMFERENCE = 2 * TRACK * math.pi
 # We set this so that at 180 degrees, the speed is near the top of
 # your 300-600 range (180 * 3.3 = 594).
 KP_GAIN = 5.3
+DRIVE_KP_GAIN = 0.1
 
 # 2. Minimum Move Speed (MIN_MOVE_SPEED)
 # - This is the lowest speed that will make your robot's motors move (overcomes friction).
@@ -63,6 +64,101 @@ def degreesForDistance(distance_cm):
 async def drive(distance, speed):
     await motor_pair.move_for_degrees(motor_pair.PAIR_1, degreesForDistance(distance), 0, velocity=speed, stop=motor.BRAKE, acceleration=1000, deceleration=1000)
 
+async def drive_straight(distance_cm, speed, min_speed=150, ramp_degrees=720):    
+    #Drives in a straight line using a P-controller and velocity easing.
+    #- distance_cm: Distance to travel in cm (negative for backward).
+    #- speed: Max motor velocity (always positive).
+    #- min_speed: The speed to start and end at (always positive).
+    #- ramp_degrees: Motor degrees over which to accelerate/decelerate.
+
+    global DRIVE_KP_GAIN
+    motion_sensor.reset_yaw(0) # Start from a known "straight" angle (0)
+
+    # --- 1. Setup Speed Parameters ---
+    max_speed_abs = abs(speed)
+    min_speed_abs = max(0, abs(min_speed)) # Ensure min_speed is positive
+
+    if max_speed_abs < min_speed_abs:
+        min_speed_abs = max_speed_abs # Can't have min speed > max speed
+
+    speed_range = max_speed_abs - min_speed_abs
+
+    direction = 1
+    if distance_cm < 0:
+        direction = -1 # Drive backward
+
+    # --- 2. Setup Distance Parameters ---
+    target_motor_degrees = degreesForDistance(abs(distance_cm))
+    if target_motor_degrees == 0:
+        return # Nothing to move
+
+    start_position = motor.relative_position(port.A)
+
+    # --- 3. Setup Easing Parameters ---
+    # Handle moves shorter than two ramps
+    accel_ramp = ramp_degrees
+    decel_ramp = ramp_degrees
+
+    if target_motor_degrees < (ramp_degrees * 2):
+        # Short move: ramp up for half the distance, down for the other half
+        accel_ramp = target_motor_degrees / 2
+        decel_ramp = target_motor_degrees / 2
+
+    decel_start_degrees = target_motor_degrees - decel_ramp
+
+    # --- 4. P-Controller Loop ---
+    current_degrees_moved = 0
+
+    while current_degrees_moved < target_motor_degrees:
+        # --- P-Controller (Yaw Correction) ---
+        yaw_angle = motion_sensor.tilt_angles()[0] * -0.1
+        error = yaw_angle # We want the yaw to be 0
+        steering = DRIVE_KP_GAIN * error
+        steering = max(-100, min(100, steering))
+
+        # --- Easing (Velocity Control) ---
+        current_speed_abs = 0
+
+        if accel_ramp > 0 and current_degrees_moved < accel_ramp:
+            # --- Acceleration Phase ---
+            progress = current_degrees_moved / accel_ramp # 0.0 to 1.0
+            current_speed_abs = min_speed_abs + (progress * speed_range)
+
+        elif decel_ramp > 0 and current_degrees_moved >= decel_start_degrees:
+            # --- Deceleration Phase ---
+            degrees_left = target_motor_degrees - current_degrees_moved
+            progress = degrees_left / decel_ramp # 1.0 down to 0.0
+            progress = max(0.0, progress) # Clamp at 0
+            current_speed_abs = min_speed_abs + (progress * speed_range)
+
+        else:
+            # --- Coasting Phase ---
+            current_speed_abs = max_speed_abs
+
+        # Ensure speed is at least min_speed
+        if current_speed_abs < min_speed_abs:
+            current_speed_abs = min_speed_abs
+
+        if current_speed_abs > max_speed_abs:
+            current_speed_abs = max_speed_abs
+
+        # --- Apply motor movement ---
+        current_speed_with_direction = int(current_speed_abs * direction)
+        motor_pair.move(motor_pair.PAIR_1, int(steering), velocity=current_speed_with_direction)
+
+        # Update how far we've gone
+        current_degrees_moved = abs(motor.relative_position(port.A) - start_position)
+
+        await runloop.sleep_ms(10) # 10ms loop for smooth easing
+
+    # --- End of Loop ---
+    # We've reached our target distance, so stop.
+    motor_pair.stop(motor_pair.PAIR_1, stop=motor.BRAKE)
+
+async def accurateDrive(distance_cm, speed):
+    await drive_straight(distance_cm, speed)
+
+# --- End Accurate Drive ---
 async def rotateRightArm(degrees, speed):
     # Calculate Compound Gear Ratios :
     # 20/8 = 2.5
