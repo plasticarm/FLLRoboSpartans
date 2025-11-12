@@ -1,0 +1,77 @@
+
+# This code was automatically generated for mission: Mainmission
+# It assumes a library named '*' with asynchronous commands for movement and rotation.
+"""
+Available functions in the common library:
+
+setupMotors()
+resetYaw()
+degreesForDistance(distance_cm)
+drive(distance, speed)
+rotateRightArm(degrees, speed)
+rotateLeftArm(degrees, speed)
+rotateCenterArm(degrees, speed)
+resetArmRotation()
+turn_done()
+rotateDegrees(degrees, speed)
+spin_turn(robot_degrees, motor_speed)
+pivot_turn(robot_degrees, motor_speed)
+all_done()
+beep(frequency, duration)
+"""
+
+from common import *
+import runloop
+
+async def mission_09_whats_on_sale_wares () :
+    # Drive forward a bit to move away from table wall
+    await drive (3, 300)
+    # Turn left to face middle of table
+    await rotateDegrees (-55, 300)
+    # Drive towards the roof lever
+    await drive (43, 500)
+    # Rotate to face the lever
+    await rotateDegrees (95, 300)
+    # Drive forward a bit to the lever
+    await drive (3, 600)
+    # Lower the arm to go on top of the lever
+    await rotateLeftArm (49, 300)
+    # Drive back to pull the lever down
+    await drive (-9.5, 350)
+    # Beep to finish the mission
+    await beep (500, 1000)
+
+async def mission_10_tip_the_scales_scale_pan () :
+    # Raise the arm
+    await rotateLeftArm (-50, 300)
+    # Turn to the left to face the scale pan ring
+    await rotateDegrees (-33, 300)
+    # Lower the arm partially into the ring
+    await rotateLeftArm (38, 300)
+    # Drive forward to position the arm above the ring
+    await drive (6, 100)
+    # Fully lower the arm into the ring
+    await rotateLeftArm(32, 200)
+    # Pull the ring out
+    await drive (-7.5, 300)
+    # Rotate to face back of the bot towards home
+    await rotateDegrees (-70, 300)
+    # Drive home
+    await drive (-70, 300)
+
+async def main():
+    # Starting mission: Second mission starting from home left, second line
+    # Initial Position: 75.92, -44.72 cm,
+    # Initial Angle: 0.00 degrees
+    # Initialize the motor pair for wheels and save motor positions. Do this every time.
+
+    # This mission performs the 2 easy missions on the right center side of the table
+
+    await init()
+    await mission_09_whats_on_sale_wares()
+    await mission_10_tip_the_scales_scale_pan()
+
+    # reset the arms before finishing so they are ready to go again.
+    await resetArmRotation()
+
+runloop.run(main())
