@@ -1,24 +1,6 @@
 
 # This code was automatically generated for mission: Mainmission
 # It assumes a library named '*' with asynchronous commands for movement and rotation.
-"""
-Available functions in the common library:
-
-setupMotors()
-resetYaw()
-degreesForDistance(distance_cm)
-drive(distance, speed)
-rotateRightArm(degrees, speed)
-rotateLeftArm(degrees, speed)
-rotateCenterArm(degrees, speed)
-resetArmRotation()
-turn_done()
-rotateDegrees(degrees, speed)
-spin_turn(robot_degrees, motor_speed)
-pivot_turn(robot_degrees, motor_speed)
-all_done()
-beep(frequency, duration)
-"""
 
 from common import *
 import runloop
@@ -30,8 +12,6 @@ async def mission_08_silo () :
     for i in range(4):
         await rotateRightArm(90, 1000)
         await rotateRightArm(-90, 500)
-    # Beep to finish the mission
-    await beep (500, 1000)
 
 async def mission_06_forge () :
     # Drive to the 3 rocks
@@ -44,8 +24,6 @@ async def mission_06_forge () :
     await rotateDegrees(-20.00, 500)
     # Rotate back to the right to reposition
     await rotateDegrees (40,500)
-    # Beep to finish the mission
-    await beep (500, 1000)
 
 async def mission_05_who_lived_here () :
     # Reverse from the rocks
@@ -61,8 +39,6 @@ async def mission_05_who_lived_here () :
     await rotateDegrees (6, 300)
     # Drive back away from the structure
     await drive (-10,500)
-    # Beep to finish the mission
-    await beep (500, 1000)
 
 async def mission_10_tip_the_scales () :
     # Rotate to the left to prepare to drive to the scales
@@ -77,8 +53,6 @@ async def mission_10_tip_the_scales () :
     await rotateRightArm(70,200)
     # Bring the arm back up
     await rotateRightArm (-80, 350)
-    # Beep to finish the mission
-    await beep (500, 1000)
 
 async def drive_home () :
     # Back away from the scales
@@ -97,8 +71,6 @@ async def drive_home () :
     runloop.run(*[a,b])
     # Rotate right
     await rotateDegrees (20, 300)
-    # Beep to finish the mission
-    await beep (700, 1000)
 
 async def main():
     # Starting mission: Mainmission

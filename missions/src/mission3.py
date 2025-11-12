@@ -1,52 +1,9 @@
 
 # This code was automatically generated for mission: Mainmission
 # It assumes a library named '*' with asynchronous commands for movement and rotation.
-"""
-Available functions in the common library:
-
-setupMotors()
-resetYaw()
-degreesForDistance(distance_cm)
-drive(distance, speed)
-rotateRightArm(degrees, speed)
-rotateLeftArm(degrees, speed)
-rotateCenterArm(degrees, speed)
-resetArmRotation()
-turn_done()
-rotateDegrees(degrees, speed)
-spin_turn(robot_degrees, motor_speed)
-pivot_turn(robot_degrees, motor_speed)
-all_done()
-beep(frequency, duration)
-"""
 
 from common import *
 import runloop
-"""
-async def lift_statue () :
-    await drive (46, 400)
-    await rotateDegrees (-33, 400)
-    await drive (44, 400)
-    await rotateDegrees (-75, 400)
-    await drive (45, 400)
-    await rotateDegrees (-14.55, 200)
-    await drive (3.5, 400)
-    await rotateRightArm (120, 800)
-    await drive(-1, 100)
-    await rotateRightArm(-100, 300)
-    await rotateRightArm(120, 800)
-    await drive (-13, 300)
-    await rotateRightArm (-80, 400)
-    await rotateDegrees (81, 400)
-    await rotateLeftArm (45, 400)
-    await drive (27, 400)
-    await rotateLeftArm (-90, 660)
-    await drive (-7, 400)
-    await rotateDegrees (-40, 400)
-    await drive (62, 400)
-    await rotateDegrees (-70, 400)
-    await drive (65, 550)
-"""
 
 async def lift_statue () :
     await drive (46, 400)

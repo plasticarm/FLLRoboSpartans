@@ -1,24 +1,6 @@
 
 # This code was automatically generated for mission: Mainmission
 # It assumes a library named '*' with asynchronous commands for movement and rotation.
-"""
-Available functions in the common library:
-
-setupMotors()
-resetYaw()
-degreesForDistance(distance_cm)
-drive(distance, speed)
-rotateRightArm(degrees, speed)
-rotateLeftArm(degrees, speed)
-rotateCenterArm(degrees, speed)
-resetArmRotation()
-turn_done()
-rotateDegrees(degrees, speed)
-spin_turn(robot_degrees, motor_speed)
-pivot_turn(robot_degrees, motor_speed)
-all_done()
-beep(frequency, duration)
-"""
 
 from common import *
 import runloop
@@ -38,8 +20,6 @@ async def mission_09_whats_on_sale_wares () :
     await rotateLeftArm (49, 300)
     # Drive back to pull the lever down
     await drive (-9.5, 350)
-    # Beep to finish the mission
-    await beep (500, 1000)
 
 async def mission_10_tip_the_scales_scale_pan () :
     # Raise the arm
