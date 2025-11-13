@@ -25,17 +25,17 @@ async def mission_10_tip_the_scales_scale_pan () :
     # Raise the arm
     await rotateLeftArm (-50, 300)
     # Turn to the left to face the scale pan ring
-    await rotateDegrees (-33, 300)
+    await rotateDegrees (-25, 300)
     # Lower the arm partially into the ring
     await rotateLeftArm (38, 300)
     # Drive forward to position the arm above the ring
     await drive (6, 100)
     # Fully lower the arm into the ring
-    await rotateLeftArm(32, 200)
+    await rotateLeftArm(25, 200)
     # Pull the ring out
-    await drive (-7.5, 300)
+    await drive (-9, 300)
     # Rotate to face back of the bot towards home
-    await rotateDegrees (-70, 300)
+    await accurateRotateDegrees (-70, 300)
     # Drive home
     await drive (-70, 300)
 
