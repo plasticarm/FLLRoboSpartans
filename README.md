@@ -17,3 +17,8 @@ spin_turn(robot_degrees, motor_speed)
 pivot_turn(robot_degrees, motor_speed)
 all_done()
 beep(frequency, duration)
+
+## Forward SSH Agent
+
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_github
