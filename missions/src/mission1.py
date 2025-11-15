@@ -7,17 +7,13 @@ import runloop
 
 async def mission_08_silo () :
     # Drive to silo
-    await accurateDrive(40.50, 1000)
-    # Hit the lever 4 times (down, up)
-    for i in range(4):
-        await rotateRightArm(90, 1000)
-        await rotateRightArm(-90, 500)
+    await drive(40.50, 500)
 
 async def mission_06_forge () :
     # Drive to the 3 rocks
     await drive(18.50, 1000)
     # Change direction to the right
-    await rotateDegrees(20.00, 500)
+    await rotateDegrees(23.00, 500)
     # Drive closer to the rocks
     await drive(10.00, 1000)
     # Hit the lever to release the rocks
@@ -31,9 +27,9 @@ async def mission_05_who_lived_here () :
     # Drive forward a little so that rotation works
     await drive (2, 20)
     # Rotate to the left to align with the lever
-    await rotateDegrees (-45.00, 500)
+    await rotateDegrees (-38.00, 500)
     # Drive up to the lever
-    await drive (12, 500)
+    await drive (13, 500)
     # Hit the lever
     await rotateDegrees (-26, 500)
     await rotateDegrees (6, 300)
@@ -42,7 +38,7 @@ async def mission_05_who_lived_here () :
 
 async def mission_10_tip_the_scales () :
     # Rotate to the left to prepare to drive to the scales
-    await rotateDegrees(-50,500)
+    await rotateDegrees(-40,500)
     # Drive towards the scales
     await drive(31, 500)
     # Rotate to the left to get in front of the scales
@@ -66,7 +62,7 @@ async def drive_home () :
     #Drive towards home
     #reset arms and drive at same time.
     a = resetArmRotation()
-    b = drive (70, 500) 
+    b = drive (70, 500)
     # run the functions together
     runloop.run(*[a,b])
     # Rotate right

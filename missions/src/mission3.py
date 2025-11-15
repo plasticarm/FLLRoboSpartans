@@ -25,6 +25,9 @@ async def mission3 () :
     await rotateLeftArm(83, 600)
     await accurateDrive (10, 400)
     await rotateLeftArm (-90, 600)
+    await drive(-15, 400)
+    await accurateRotateDegrees(-90, 400)
+    await drive(35, 600)
 
 
 
