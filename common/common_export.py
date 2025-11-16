@@ -19,7 +19,7 @@ commonCode: str = """
 from hub import port, light_matrix, motion_sensor, sound, button
 import hub
 import motor
-import runloop, motor_pair, sys, math, asyncio
+import runloop, motor_pair, sys, math
 
 # GLOBALS
 degrees_to_turn = 0 # Yaw angle reading that indicates the robot needs to stop
@@ -58,6 +58,7 @@ _right_arm_start_angle = 0
 _center_arm_start_angle = 0
 
 async def setupMotors():
+    light_matrix.show_image(light_matrix.IMAGE_ASLEEP)
     motor_pair.pair(motor_pair.PAIR_1, port.A, port.B)
     motion_sensor.reset_yaw(0)
     await runloop.until(motion_sensor.stable)
@@ -67,16 +68,23 @@ async def setupMotors():
     _left_arm_start_angle = motor.relative_position(port.C)
     _right_arm_start_angle = motor.relative_position(port.D)
     _center_arm_start_angle = motor.relative_position(port.D) # Assuming right and center arm use the same motor for now
+    light_matrix.show_image(light_matrix.IMAGE_HAPPY)
 
 async def resetYaw():
     motion_sensor.reset_yaw(0)
+    light_matrix.write("Y")
     await runloop.until(motion_sensor.stable)
+    light_matrix.show_image(light_matrix.IMAGE_HAPPY)
 
 def degreesForDistance(distance_cm):
     # Add multiplier for gear ratio if needed
     return int((distance_cm/WHEEL_CIRCUMFERENCE) * 360)
 
 async def drive(distance, speed):
+    if distance > 0:
+        light_matrix.show_image(light_matrix.IMAGE_ARROW_N)
+    else:
+        light_matrix.show_image(light_matrix.IMAGE_ARROW_S)    
     await motor_pair.move_for_degrees(motor_pair.PAIR_1, degreesForDistance(distance), 0, velocity=speed, stop=motor.BRAKE, acceleration=1000, deceleration=1000)
 
 async def drive_straight(distance_cm, speed, min_speed=150, ramp_degrees=720):    
@@ -97,6 +105,11 @@ async def drive_straight(distance_cm, speed, min_speed=150, ramp_degrees=720):
         min_speed_abs = max_speed_abs # Can't have min speed > max speed
 
     speed_range = max_speed_abs - min_speed_abs
+
+    if distance > 0:
+        light_matrix.show_image(light_matrix.IMAGE_ARROW_N)
+    else:
+        light_matrix.show_image(light_matrix.IMAGE_ARROW_S)
 
     direction = 1
     if distance_cm < 0:
@@ -178,24 +191,27 @@ async def rotateRightArm(degrees, speed):
     # Calculate Compound Gear Ratios :
     # 20/8 = 2.5
     await motor.run_for_degrees(port.D, math.floor(-degrees * 2.5), speed)
+    light_matrix.show_image(light_matrix.IMAGE_ARROW_E)    
 
 async def rotateLeftArm(degrees, speed):
     # Calculate Compound Gear Ratios :
     # 36/12 = 3
     await motor.run_for_degrees(port.C, degrees * 3, speed)
+    light_matrix.show_image(light_matrix.IMAGE_ARROW_W)
 
 async def rotateCenterArm(degrees, speed):
     # Calculate Compound Gear Ratios :
     # 36/12 * 20/12 = 5
     await motor.run_for_degrees(port.D, degrees * math.ceil(4.9), speed)
+    light_matrix.show_image(light_matrix.IMAGE_ARROW_N) 
 
 async def resetArmRotation():
     global _left_arm_start_angle, _right_arm_start_angle, _center_arm_start_angle
     a = motor.run_to_relative_position(port.C, _left_arm_start_angle, 660)
     b = motor.run_to_relative_position(port.D, _right_arm_start_angle, 660)
     runloop.run(*[a,b])
+    light_matrix.show_image(light_matrix.IMAGE_TARGET) 
 
-# Function that returns true when the yaw has turned past stop angle
 # Function that returns true when the yaw has turned past stop angle
 def turn_done():
     global degrees_to_turn, stop_angle
@@ -219,6 +235,11 @@ def turn_done():
 
 # basic rotation of robot with accuracy as priority
 async def rotateDegrees(degrees, speed):
+    if degrees > 0:
+        light_matrix.show_image(light_matrix.IMAGE_ARROW_E)
+    else:
+        light_matrix.show_image(light_matrix.IMAGE_ARROW_W)
+
     global degrees_to_turn, stop_angle
     if abs(degrees) > 355:
         print ("Out of range. Do not rotateDegrees for more than 355.")
@@ -269,6 +290,11 @@ async def gyro_turn(target_angle, max_speed):
     current_angle = motion_sensor.tilt_angles()[0] * -0.1
     # Calculate the error (how far we are from the target)
     error = target_angle - current_angle
+
+    if target_angle > 0:
+        light_matrix.show_image(light_matrix.IMAGE_ARROW_E)
+    else:
+        light_matrix.show_image(light_matrix.IMAGE_ARROW_W)
 
     # Loop until the error is within our tolerance
     while abs(error) > TOLERANCE:
