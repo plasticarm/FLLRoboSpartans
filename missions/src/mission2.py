@@ -21,6 +21,27 @@ async def mission_09_whats_on_sale_wares () :
     # Drive back to pull the lever down
     await drive (-9.5, 350)
 
+async def mission_09_whats_on_sale_roof_raise () :
+    # Turn left towards the roof
+    await rotateDegrees (-8, 400)
+    await drive (8, 300)
+    await rotateDegrees (-7, 100)
+    await drive (2.5, 200)
+    # Raise left arm to raise roof
+    await rotateLeftArm (-30, 700)
+    await rotateDegrees (15, 400)
+    await rotateDegrees (-30, 400)
+    await drive (-5, 400)
+    await rotateLeftArm (49, 400)
+
+
+    # Turn right to full raise roof
+
+    # Turn left to go back to original position
+
+    # Drive back to get ready for next mission
+    
+
 async def mission_10_tip_the_scales_scale_pan () :
     # Raise the arm
     await rotateLeftArm (-50, 300)
@@ -49,6 +70,7 @@ async def main():
 
     await init()
     await mission_09_whats_on_sale_wares()
+    await mission_09_whats_on_sale_roof_raise()
     await mission_10_tip_the_scales_scale_pan()
 
     # reset the arms before finishing so they are ready to go again.

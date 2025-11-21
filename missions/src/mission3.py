@@ -7,27 +7,28 @@ import runloop
 
 async def mission3 () :
     await rotateRightArm(-45, 300)
-    await accurateDrive(3, 300)
+    await accurateDrive(3, 100)
     await accurateRotateDegrees(-5, 400)
     await accurateDrive (53, 600)
     await accurateRotateDegrees (-38, 400)
     await accurateDrive (23, 600)
     await accurateRotateDegrees(-34, 400)
     await rotateLeftArm(30, 300)
-    await accurateDrive (69, 600)
+    await accurateDrive (68, 600)
     await accurateRotateDegrees(2.5, 400)
     # Hit car lever up
     await rotateLeftArm(-75, 600)
-    await accurateDrive (-14, 600)
+    await accurateDrive (-13, 600)
     await accurateRotateDegrees(75, 600)
     await accurateDrive (-50, 600)
     await accurateRotateDegrees(-32, 600)
     await rotateLeftArm(83, 600)
-    await accurateDrive (10, 400)
+    # Drive to the statute
+    await accurateDrive (8, 300)
     await rotateLeftArm (-90, 600)
-    await drive(-15, 400)
-    await accurateRotateDegrees(-90, 400)
-    await drive(35, 600)
+    await drive(-5, 400)
+    await accurateRotateDegrees(90, 400)
+    await drive(-70, 600)
 
 
 
