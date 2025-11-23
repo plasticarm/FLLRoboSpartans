@@ -81,6 +81,7 @@ async def main():
     # This mission performs the 4 missions on the right side of the table
 
     await init()
+    await setSpeedFactor(2)
     await rotateRightArm (-45, 500)
     await rotateLeftArm (-90, 500)
     await mission_08_silo ()
