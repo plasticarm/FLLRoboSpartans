@@ -20,7 +20,7 @@ drive_base = DriveBase(left_motor, right_motor, wheel_diameter=88, axle_track=10
 drive_base.settings(straight_speed=500, straight_acceleration=500, turn_rate=300, turn_acceleration=300)
 
 motor_a = Motor(Port.A)
-motor_b = Motor(Port.E, Direction.COUNTERCLOCKWISE)
+motor_b = Motor(Port.E)
 
 # Input Scaling & Deadzone
 def apply_deadzone(stick, threshold=7):
