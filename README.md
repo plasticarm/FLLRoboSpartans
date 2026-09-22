@@ -31,7 +31,9 @@ Turn the hub off normally after saving so Pybricks can commit the recordings to 
 1. Select the slot with the hub's Left and Right buttons.
 2. Press the controller's Menu button or the hub's Center button.
 3. The hub displays `P` while playback is running.
-4. Press Menu again to cancel playback. Playback also stops automatically when the recording finishes.
+4. Press the same playback button again to cancel. Playback also stops automatically when the recording finishes.
+
+No Xbox controller is required to select and replay recordings that are already saved. Press the hub's Bluetooth button to stop the program; Center is reserved for playback.
 
 ### Controller controls
 
@@ -56,9 +58,10 @@ Turn the hub off normally after saving so Pybricks can commit the recordings to 
 
 | Hub button | Function |
 | --- | --- |
-| Left | Select the previous recording slot. |
-| Right | Select the next recording slot. Selection wraps between slots 1 and 10. |
-| Center | Start or cancel playback of the selected slot. |
+| Left | Select the previous virtual recording slot. |
+| Right | Select the next virtual recording slot. Selection wraps between slots 1 and 10. |
+| Center | Start or cancel playback of the selected virtual slot. |
+| Bluetooth | Stop the program. |
 
 When an attachment motor stalls, the controller rumbles. During playback, A and B can still apply the speed multiplier to the replayed movement.
 
