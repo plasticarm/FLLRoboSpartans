@@ -51,24 +51,21 @@ except Exception:
 SLOT_COUNT = 10
 STORAGE_SIZE = 508
 STORAGE_HEADER_SIZE = 3 + SLOT_COUNT
-MOVE_SIZE = 9
-MAX_STORED_MOVES = (STORAGE_SIZE - STORAGE_HEADER_SIZE) // MOVE_SIZE
+COMMAND_SIZE = 5
+MAX_STORED_COMMANDS = (STORAGE_SIZE - STORAGE_HEADER_SIZE) // COMMAND_SIZE
 STORAGE_MAGIC = b"RS"
-STORAGE_VERSION = 1
-recorded_moves = []
+STORAGE_VERSION = 2
+recorded_commands = []
 recording_slots = [[] for _ in range(SLOT_COUNT)]
 selected_slot = 1
 python_script_output = []
 is_recording = False
 is_playing = False
 playback_index = 0
-playback_clock = 0
 
 use_gyro_global = True
 drive_base.use_gyro(use_gyro_global)
 
-recorded_time = 0
-prev_inputs = (0, 0, 0, 0, 0, 1) 
 prev_record, prev_play = False, False
 prev_hub_left, prev_hub_right, prev_hub_center = False, False, False
 prev_dpad_right, prev_dpad_down, prev_dpad_left = False, False, False
@@ -95,48 +92,58 @@ def load_recording_slots():
         slots = []
         offset = STORAGE_HEADER_SIZE
         for slot_index in range(SLOT_COUNT):
-            moves = []
+            commands = []
             for _ in range(data[3 + slot_index]):
-                if offset + MOVE_SIZE > len(data):
+                if offset + COMMAND_SIZE > len(data):
                     return [[] for _ in range(SLOT_COUNT)]
-                move = ustruct.unpack("<HhhbbB", data[offset:offset + MOVE_SIZE])
-                moves.append((move[0], move[1], move[2], move[3], move[4], move[5] & 1, (move[5] >> 1) & 1))
-                offset += MOVE_SIZE
-            slots.append(moves)
+                commands.append(ustruct.unpack("<Bhh", data[offset:offset + COMMAND_SIZE]))
+                offset += COMMAND_SIZE
+            slots.append(commands)
         return slots
     except Exception as error:
         print(f">>> WARNING: Could not load persistent recordings: {error}")
         return [[] for _ in range(SLOT_COUNT)]
 
 
-def save_recording_slot(slot_index, moves):
+def save_recording_slot(slot_index, commands):
     updated_slots = recording_slots[:]
-    updated_slots[slot_index] = moves[:]
-    total_moves = sum(len(slot) for slot in updated_slots)
-    if total_moves > MAX_STORED_MOVES:
+    updated_slots[slot_index] = commands[:]
+    total_commands = sum(len(slot) for slot in updated_slots)
+    if total_commands > MAX_STORED_COMMANDS:
         return False
 
     data = STORAGE_MAGIC + ustruct.pack("<B", STORAGE_VERSION)
     for slot in updated_slots:
         data += ustruct.pack("<B", len(slot))
     for slot in updated_slots:
-        for move in slot:
-            timestamp, speed, turn, a_duty, b_duty, play_brake, play_gyro = move
-            data += ustruct.pack(
-                "<HhhbbB",
-                max(0, min(65535, round(timestamp))),
-                max(-32768, min(32767, round(speed))),
-                max(-32768, min(32767, round(turn))),
-                max(-128, min(127, round(a_duty))),
-                max(-128, min(127, round(b_duty))),
-                int(play_brake) | (int(play_gyro) << 1),
-            )
+        for command_type, value_1, value_2 in slot:
+            data += ustruct.pack("<Bhh", command_type, value_1, value_2)
     try:
         hub.system.storage(0, write=data)
         return True
     except Exception as error:
         print(f">>> ERROR: Could not save slot {slot_index + 1}: {error}")
         return False
+
+
+def execute_recorded_command(command, speed_multiplier):
+    command_type, value_1, value_2 = command
+    if command_type == 1:
+        drive_base.settings(straight_speed=max(1, round(abs(value_1) * speed_multiplier)))
+        drive_base.straight(value_2 * 10)
+    elif command_type == 2:
+        drive_base.settings(turn_rate=max(1, round(abs(value_1) * speed_multiplier)))
+        drive_base.turn(value_2)
+    elif command_type == 3:
+        motor_a.run_angle(max(1, round(abs(value_1) * 10 * speed_multiplier)), value_2, wait=True)
+    elif command_type == 4:
+        motor_b.run_angle(max(1, round(abs(value_1) * 10 * speed_multiplier)), value_2, wait=True)
+    elif command_type == 5:
+        drive_base.use_gyro(bool(value_1))
+    elif command_type == 6:
+        drive_base.stop()
+        left_motor.hold()
+        right_motor.hold()
 
 
 recording_slots = load_recording_slots()
@@ -181,7 +188,9 @@ while True:
         drive_base.use_gyro(use_gyro_global)
         cmd = f"ToggleYawCorrection({use_gyro_global})"
         print(cmd)
-        if is_recording: python_script_output.append(cmd)
+        if is_recording:
+            python_script_output.append(cmd)
+            recorded_commands.append((5, int(use_gyro_global), 0))
         if use_gyro_global: hub.speaker.beep(600, 100) 
         else: hub.speaker.beep(200, 100) 
 
@@ -189,7 +198,9 @@ while True:
     if y_held and not prev_y:
         cmd = "Stop()"
         print(cmd)
-        if is_recording: python_script_output.append(cmd)
+        if is_recording:
+            python_script_output.append(cmd)
+            recorded_commands.append((6, 0, 0))
 
     # Attachment Reset (D-Pad Down)
     if dpad_down_pressed:
@@ -227,10 +238,8 @@ while True:
                 wait(100)
                 hub.imu.reset_heading(0)
                 
-                recorded_moves = []
+                recorded_commands = []
                 python_script_output.clear()
-                recorded_time = 0
-                prev_inputs = (0, 0, 0, 0, 0, 1)
                 
                 record_start_a = motor_a.angle()
                 record_start_b = motor_b.angle()
@@ -242,13 +251,13 @@ while True:
                 print(f"========================================")
                 hub.speaker.beep(1000, 300)
             else:
-                if save_recording_slot(selected_slot - 1, recorded_moves):
-                    recording_slots[selected_slot - 1] = recorded_moves[:]
-                    save_message = f">>> Saved {len(recorded_moves)} moves to persistent slot {selected_slot}."
+                if save_recording_slot(selected_slot - 1, recorded_commands):
+                    recording_slots[selected_slot - 1] = recorded_commands[:]
+                    save_message = f">>> Saved {len(recorded_commands)} commands to persistent slot {selected_slot}."
                 else:
-                    used_moves = sum(len(slot) for slot in recording_slots)
-                    available_moves = MAX_STORED_MOVES - used_moves + len(recording_slots[selected_slot - 1])
-                    save_message = f">>> ERROR: Recording has {len(recorded_moves)} moves; only {available_moves} fit in hub storage."
+                    used_commands = sum(len(slot) for slot in recording_slots)
+                    available_commands = MAX_STORED_COMMANDS - used_commands + len(recording_slots[selected_slot - 1])
+                    save_message = f">>> ERROR: Recording has {len(recorded_commands)} commands; only {available_commands} fit in hub storage."
                 hub.display.char("-")
                 print(f"\n========================================")
                 print(f">>> RECORDING STOPPED.")
@@ -267,11 +276,11 @@ while True:
             print(f"\n>>> ERROR: Playback failed. Slot {selected_slot} is empty.")
             hub.speaker.beep(100, 200)
         else:
-            recorded_moves = recording_slots[selected_slot - 1]
+            recorded_commands = recording_slots[selected_slot - 1]
             is_playing = not is_playing
             if is_playing:
                 print(f"\n========================================")
-                print(f">>> STARTING PLAYBACK: Slot {selected_slot}, executing {len(recorded_moves)} commands.")
+                print(f">>> STARTING PLAYBACK: Slot {selected_slot}, executing {len(recorded_commands)} commands.")
                 print(f"========================================")
                 hub.speaker.beep(600, 100)
                 hub.speaker.beep(800, 200)
@@ -279,7 +288,6 @@ while True:
                 wait(100)
                 hub.imu.reset_heading(0)
                 
-                playback_clock = 0
                 playback_index = 0
                 hub.display.char("P")
                 is_displaying_telemetry = False
@@ -292,27 +300,9 @@ while True:
 
     # Execution Loops
     if is_playing:
-        playback_clock += (50 * speed_mult)
-        if playback_index < len(recorded_moves):
-            t, d_speed, d_turn, a_duty, b_duty, play_brake, play_gyro = recorded_moves[playback_index]
-            
-            if playback_clock >= t:
-                play_d_speed = d_speed * speed_mult
-                play_d_turn = d_turn * speed_mult
-                play_a_duty = max(min(a_duty * speed_mult, 100), -100)
-                play_b_duty = max(min(b_duty * speed_mult, 100), -100)
-
-                drive_base.use_gyro(bool(play_gyro))
-
-                if play_brake:
-                    left_motor.hold()
-                    right_motor.hold()
-                else:
-                    drive_base.drive(play_d_speed, play_d_turn)
-
-                motor_a.dc(play_a_duty)
-                motor_b.dc(play_b_duty)
-                playback_index += 1
+        if playback_index < len(recorded_commands):
+            execute_recorded_command(recorded_commands[playback_index], speed_mult)
+            playback_index += 1
         else:
             is_playing = False
             print("\n>>> PLAYBACK FINISHED successfully.")
@@ -354,13 +344,6 @@ while True:
         motor_a.dc(a_duty)
         motor_b.dc(b_duty)
 
-        if is_recording:
-            current_inputs = (d_speed, d_turn, a_duty, b_duty, int(y_held), int(use_gyro_global))
-            recorded_time += 50
-            if current_inputs != prev_inputs:
-                recorded_moves.append((recorded_time, d_speed, d_turn, a_duty, b_duty, int(y_held), int(use_gyro_global)))
-            prev_inputs = current_inputs
-
         # 1. Autonomous Command Generation: Distance
         if d_speed != 0 and not moving_y:
             moving_y = True
@@ -375,7 +358,9 @@ while True:
                 hub.display.number(abs(dist_cm))
                 cmd = f"Drive({round(max_d_speed)}, {dist_cm})"
                 print(cmd)
-                if is_recording: python_script_output.append(cmd)
+                if is_recording:
+                    python_script_output.append(cmd)
+                    recorded_commands.append((1, round(max_d_speed), dist_cm))
             telemetry_timer.reset()
             is_displaying_telemetry = True
 
@@ -393,7 +378,9 @@ while True:
                 hub.display.number(abs(rot_deg))
                 cmd = f"Rotate({round(max_d_turn)}, {rot_deg})"
                 print(cmd)
-                if is_recording: python_script_output.append(cmd)
+                if is_recording:
+                    python_script_output.append(cmd)
+                    recorded_commands.append((2, round(max_d_turn), rot_deg))
             telemetry_timer.reset()
             is_displaying_telemetry = True
 
@@ -411,7 +398,9 @@ while True:
                 hub.display.number(abs(a_deg))
                 cmd = f"LeftAttachmentRotate({round(max_a_duty)}, {a_deg})"
                 print(cmd)
-                if is_recording: python_script_output.append(cmd)
+                if is_recording:
+                    python_script_output.append(cmd)
+                    recorded_commands.append((3, round(max_a_duty), a_deg))
             telemetry_timer.reset()
             is_displaying_telemetry = True
 
@@ -429,7 +418,9 @@ while True:
                 hub.display.number(abs(b_deg))
                 cmd = f"RightAttachmentRotate({round(max_b_duty)}, {b_deg})"
                 print(cmd)
-                if is_recording: python_script_output.append(cmd)
+                if is_recording:
+                    python_script_output.append(cmd)
+                    recorded_commands.append((4, round(max_b_duty), b_deg))
             telemetry_timer.reset()
             is_displaying_telemetry = True
 

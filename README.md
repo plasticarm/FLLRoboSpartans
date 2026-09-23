@@ -17,7 +17,7 @@ Run `XBoxControlledRecordingPlayback.py` on the PrimeHub to drive the robot manu
 4. Press View again to stop recording. The movement data is saved to the selected hub slot and the generated autonomous commands are printed to the controller terminal.
 
 ### Record a program
-Recordings are stored in the PrimeHub's persistent storage and loaded when the program starts. They survive a program restart and normal hub shutdown, but are cleared by a Pybricks firmware update. The ten slots share space for up to 55 input changes; recordings are stored only when the controls change rather than every 50 ms. A recording that exceeds the remaining shared capacity is not saved and reports how many moves fit. The generated commands must be copied into `MissionRunner.py` for longer or permanent autonomous missions.
+Recordings are stored in the PrimeHub's persistent storage and loaded when the program starts. They survive a program restart and normal hub shutdown, but are cleared by a Pybricks firmware update. The ten slots share space for up to 99 autonomous commands such as drive, rotate, attachment, gyro, and stop commands. A recording that exceeds the remaining shared capacity is not saved and reports how many commands fit. The generated commands must be copied into `MissionRunner.py` for longer or permanent autonomous missions.
 1. Use the hub's Left and Right buttons to select the destination slot.
 2. Press the controller's View button to start recording. The hub displays `R`.
 3. Drive the robot and operate the attachments using the controls below.
