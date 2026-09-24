@@ -115,13 +115,15 @@ def save_recording_slot(slot_index, moves):
     if total_moves > MAX_STORED_MOVES:
         return False
 
-    data = STORAGE_MAGIC + ustruct.pack("<B", STORAGE_VERSION)
-    for slot in updated_slots:
-        data += ustruct.pack("<B", len(slot))
-    for slot in updated_slots:
+    data = bytearray(STORAGE_HEADER_SIZE + total_moves * MOVE_SIZE)
+    data[0:2] = STORAGE_MAGIC
+    data[2] = STORAGE_VERSION
+    offset = STORAGE_HEADER_SIZE
+    for stored_slot_index, slot in enumerate(updated_slots):
+        data[3 + stored_slot_index] = len(slot)
         for move in slot:
             timestamp, speed, turn, a_duty, b_duty, play_brake, play_gyro = move
-            data += ustruct.pack(
+            data[offset:offset + MOVE_SIZE] = ustruct.pack(
                 "<HhhbbB",
                 max(0, min(65535, round(timestamp))),
                 max(-32768, min(32767, round(speed))),
@@ -130,8 +132,9 @@ def save_recording_slot(slot_index, moves):
                 max(-128, min(127, round(b_duty))),
                 int(play_brake) | (int(play_gyro) << 1),
             )
+            offset += MOVE_SIZE
     try:
-        hub.system.storage(0, write=data)
+        hub.system.storage(0, write=bytes(data))
         return True
     except Exception as error:
         print(f">>> ERROR: Could not save slot {slot_index + 1}: {error}")
