@@ -5,9 +5,7 @@
 
 Run `XBoxControlledRecordingPlayback.py` on the PrimeHub to drive the robot manually, record a movement sequence, replay it, and generate autonomous Python commands.
 4. The hub display shows the currently selected recording slot. Ten persistent slots are available, numbered 1 through 10.
-![Xbox controller controls](images/xbox-controller-controls.jpg)
-
-*Rendered from a photograph by Evan-Amos, public domain, via [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Microsoft-Xbox-One-controller.jpg).*
+![Xbox controller controls](images/xbox-controller-controls.svg)
 
 ### Before driving
 
@@ -17,14 +15,14 @@ Run `XBoxControlledRecordingPlayback.py` on the PrimeHub to drive the robot manu
 4. Press View again to stop recording. The movement data is saved to the selected hub slot and the generated autonomous commands are printed to the controller terminal.
 
 ### Record a program
-Recordings are stored in the PrimeHub's persistent storage and loaded when the program starts. They survive a program restart and normal hub shutdown, but are cleared by a Pybricks firmware update. The ten slots share space for up to 55 input changes; recordings are stored only when the controls change rather than every 50 ms. A recording that exceeds the remaining shared capacity is not saved and reports how many moves fit. The generated commands must be copied into `MissionRunner.py` for longer or permanent autonomous missions.
+Recordings are stored in the PrimeHub's persistent storage and loaded when the program starts. They survive a program restart and hub power cycle, but are cleared by a Pybricks firmware update. PrimeHub provides 512 bytes total; this implementation reserves 51 bytes per slot and supports up to five recorded samples per slot. Longer recordings are not saved and report an error when View stops the recording. The generated commands must be copied into `MissionRunner.py` for longer or permanent autonomous missions.
 1. Use the hub's Left and Right buttons to select the destination slot.
 2. Press the controller's View button to start recording. The hub displays `R`.
 3. Drive the robot and operate the attachments using the controls below.
 4. Press View again to stop recording. The movement data is saved to the selected slot and the generated autonomous commands are printed to the controller terminal.
 5. Copy the generated commands into the matching `run_slot_N()` function in `MissionRunner.py` when you want the sequence to become a fixed autonomous mission.
 
-Turn the hub off normally after saving so Pybricks can commit the recordings to flash. Removing the battery while the hub is running can lose newly saved data.
+The recorder slots are runtime memory only. They are lost when the program is restarted or the hub is reset. The generated commands must be copied into `MissionRunner.py` if they need to be kept in the project.
 
 ### Play a recorded slot
 

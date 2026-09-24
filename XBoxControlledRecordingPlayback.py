@@ -48,12 +48,8 @@ except Exception:
 
 # State Variables
 SLOT_COUNT = 10
-STORAGE_SIZE = 508
-STORAGE_HEADER_SIZE = 3 + SLOT_COUNT
-MOVE_SIZE = 9
-MAX_STORED_MOVES = (STORAGE_SIZE - STORAGE_HEADER_SIZE) // MOVE_SIZE
-STORAGE_MAGIC = b"RS"
-STORAGE_VERSION = 1
+SLOT_SIZE = 51
+MAX_MOVES_PER_SLOT = 5
 recorded_moves = []
 recording_slots = [[] for _ in range(SLOT_COUNT)]
 selected_slot = 1
@@ -86,55 +82,44 @@ record_start_a, record_start_b = 0, 0
 
 
 def load_recording_slots():
-    try:
-        data = hub.system.storage(0, read=STORAGE_SIZE)
-        if data[0:2] != STORAGE_MAGIC or data[2] != STORAGE_VERSION:
-            return [[] for _ in range(SLOT_COUNT)]
-
-        slots = []
-        offset = STORAGE_HEADER_SIZE
-        for slot_index in range(SLOT_COUNT):
+    slots = []
+    for slot_index in range(SLOT_COUNT):
+        try:
+            data = hub.system.storage(slot_index * SLOT_SIZE, read=SLOT_SIZE)
+            move_count = data[0]
+            if move_count > MAX_MOVES_PER_SLOT:
+                move_count = 0
             moves = []
-            for _ in range(data[3 + slot_index]):
-                if offset + MOVE_SIZE > len(data):
-                    return [[] for _ in range(SLOT_COUNT)]
-                move = ustruct.unpack("<HhhbbB", data[offset:offset + MOVE_SIZE])
+            for move_index in range(move_count):
+                offset = 1 + move_index * 10
+                move = ustruct.unpack("<HhhbbB", data[offset:offset + 9])
                 moves.append((move[0], move[1], move[2], move[3], move[4], move[5] & 1, (move[5] >> 1) & 1))
-                offset += MOVE_SIZE
             slots.append(moves)
-        return slots
-    except Exception as error:
-        print(f">>> WARNING: Could not load persistent recordings: {error}")
-        return [[] for _ in range(SLOT_COUNT)]
+        except Exception:
+            slots.append([])
+    return slots
 
 
 def save_recording_slot(slot_index, moves):
-    updated_slots = recording_slots[:]
-    updated_slots[slot_index] = moves[:]
-    total_moves = sum(len(slot) for slot in updated_slots)
-    if total_moves > MAX_STORED_MOVES:
+    if len(moves) > MAX_MOVES_PER_SLOT:
         return False
 
-    data = bytearray(STORAGE_HEADER_SIZE + total_moves * MOVE_SIZE)
-    data[0:2] = STORAGE_MAGIC
-    data[2] = STORAGE_VERSION
-    offset = STORAGE_HEADER_SIZE
-    for stored_slot_index, slot in enumerate(updated_slots):
-        data[3 + stored_slot_index] = len(slot)
-        for move in slot:
-            timestamp, speed, turn, a_duty, b_duty, play_brake, play_gyro = move
-            data[offset:offset + MOVE_SIZE] = ustruct.pack(
-                "<HhhbbB",
-                max(0, min(65535, round(timestamp))),
-                max(-32768, min(32767, round(speed))),
-                max(-32768, min(32767, round(turn))),
-                max(-128, min(127, round(a_duty))),
-                max(-128, min(127, round(b_duty))),
-                int(play_brake) | (int(play_gyro) << 1),
-            )
-            offset += MOVE_SIZE
+    data = bytearray(SLOT_SIZE)
+    data[0] = len(moves)
+    for move_index, move in enumerate(moves):
+        timestamp, speed, turn, a_duty, b_duty, play_brake, play_gyro = move
+        offset = 1 + move_index * 10
+        data[offset:offset + 9] = ustruct.pack(
+            "<HhhbbB",
+            max(0, min(65535, round(timestamp))),
+            max(-32768, min(32767, round(speed))),
+            max(-32768, min(32767, round(turn))),
+            max(-128, min(127, round(a_duty))),
+            max(-128, min(127, round(b_duty))),
+            int(play_brake) | (int(play_gyro) << 1),
+        )
     try:
-        hub.system.storage(0, write=bytes(data))
+        hub.system.storage(slot_index * SLOT_SIZE, write=bytes(data))
         return True
     except Exception as error:
         print(f">>> ERROR: Could not save slot {slot_index + 1}: {error}")
@@ -246,9 +231,7 @@ while True:
                     recording_slots[selected_slot - 1] = recorded_moves[:]
                     save_message = f">>> Saved {len(recorded_moves)} moves to persistent slot {selected_slot}."
                 else:
-                    used_moves = sum(len(slot) for slot in recording_slots)
-                    available_moves = MAX_STORED_MOVES - used_moves + len(recording_slots[selected_slot - 1])
-                    save_message = f">>> ERROR: Recording has {len(recorded_moves)} moves; only {available_moves} fit in hub storage."
+                    save_message = f">>> ERROR: Slot {selected_slot} holds at most {MAX_MOVES_PER_SLOT} recorded moves."
                 hub.display.char("-")
                 print(f"\n========================================")
                 print(f">>> RECORDING STOPPED.")
@@ -356,8 +339,8 @@ while True:
 
         if is_recording:
             current_inputs = (d_speed, d_turn, a_duty, b_duty, int(y_held), int(use_gyro_global))
-            recorded_time += 50
-            if current_inputs != prev_inputs:
+            if current_inputs != (0, 0, 0, 0, 0, 1) or prev_inputs != (0, 0, 0, 0, 0, 1):
+                recorded_time += 50
                 recorded_moves.append((recorded_time, d_speed, d_turn, a_duty, b_duty, int(y_held), int(use_gyro_global)))
             prev_inputs = current_inputs
 
