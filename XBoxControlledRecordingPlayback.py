@@ -4,7 +4,6 @@ from pybricks.parameters import Port, Direction, Button, Color
 from pybricks.robotics import DriveBase
 from pybricks.iodevices import XboxController
 from pybricks.tools import wait, StopWatch
-import ustruct
 
 hub = PrimeHub()
 
@@ -47,12 +46,7 @@ except Exception:
     print(">>> Running in Hub-Only Competition Mode")
 
 # State Variables
-SLOT_COUNT = 10
-SLOT_SIZE = 51
-MAX_MOVES_PER_SLOT = 5
 recorded_moves = []
-recording_slots = [[] for _ in range(SLOT_COUNT)]
-selected_slot = 1
 python_script_output = []
 is_recording = False
 is_playing = False
@@ -80,56 +74,7 @@ moving_a, start_a, max_a_duty = False, 0, 0
 moving_b, start_b, max_b_duty = False, 0, 0
 record_start_a, record_start_b = 0, 0
 
-
-def load_recording_slots():
-    slots = []
-    for slot_index in range(SLOT_COUNT):
-        try:
-            data = hub.system.storage(slot_index * SLOT_SIZE, read=SLOT_SIZE)
-            move_count = data[0]
-            if move_count > MAX_MOVES_PER_SLOT:
-                move_count = 0
-            moves = []
-            for move_index in range(move_count):
-                offset = 1 + move_index * 10
-                move = ustruct.unpack("<HhhbbB", data[offset:offset + 9])
-                moves.append((move[0], move[1], move[2], move[3], move[4], move[5] & 1, (move[5] >> 1) & 1))
-            slots.append(moves)
-        except Exception:
-            slots.append([])
-    return slots
-
-
-def save_recording_slot(slot_index, moves):
-    if len(moves) > MAX_MOVES_PER_SLOT:
-        return False
-
-    data = bytearray(SLOT_SIZE)
-    data[0] = len(moves)
-    for move_index, move in enumerate(moves):
-        timestamp, speed, turn, a_duty, b_duty, play_brake, play_gyro = move
-        offset = 1 + move_index * 10
-        data[offset:offset + 9] = ustruct.pack(
-            "<HhhbbB",
-            max(0, min(65535, round(timestamp))),
-            max(-32768, min(32767, round(speed))),
-            max(-32768, min(32767, round(turn))),
-            max(-128, min(127, round(a_duty))),
-            max(-128, min(127, round(b_duty))),
-            int(play_brake) | (int(play_gyro) << 1),
-        )
-    try:
-        hub.system.storage(slot_index * SLOT_SIZE, write=bytes(data))
-        return True
-    except Exception as error:
-        print(f">>> ERROR: Could not save slot {slot_index + 1}: {error}")
-        return False
-
-
-recording_slots = load_recording_slots()
-
 print("\n>>> System Ready. Waiting for input...")
-hub.display.number(selected_slot)
 
 while True:
     # 1. Hub Button Reading
@@ -191,18 +136,6 @@ while True:
     if a_held: speed_mult = 2.0  
     elif b_held: speed_mult = 0.4  
 
-    if not is_recording and not is_playing:
-        if hub_right_pressed and not prev_hub_right:
-            selected_slot = (selected_slot % SLOT_COUNT) + 1
-            hub.display.number(selected_slot)
-            hub.speaker.beep(400, 100)
-            print(f">>> Selected recording slot {selected_slot}.")
-        elif hub_left_pressed and not prev_hub_left:
-            selected_slot = SLOT_COUNT if selected_slot == 1 else selected_slot - 1
-            hub.display.number(selected_slot)
-            hub.speaker.beep(400, 100)
-            print(f">>> Selected recording slot {selected_slot}.")
-
     # Toggle Recording (Xbox VIEW)
     if record_pressed and not prev_record:
         if not is_playing:
@@ -212,7 +145,7 @@ while True:
                 wait(100)
                 hub.imu.reset_heading(0)
                 
-                recorded_moves = []
+                recorded_moves.clear()
                 python_script_output.clear()
                 recorded_time = 0
                 prev_inputs = (0, 0, 0, 0, 0, 1)
@@ -227,15 +160,10 @@ while True:
                 print(f"========================================")
                 hub.speaker.beep(1000, 300)
             else:
-                if save_recording_slot(selected_slot - 1, recorded_moves):
-                    recording_slots[selected_slot - 1] = recorded_moves[:]
-                    save_message = f">>> Saved {len(recorded_moves)} moves to persistent slot {selected_slot}."
-                else:
-                    save_message = f">>> ERROR: Slot {selected_slot} holds at most {MAX_MOVES_PER_SLOT} recorded moves."
                 hub.display.char("-")
                 print(f"\n========================================")
                 print(f">>> RECORDING STOPPED.")
-                print(save_message)
+                print(f">>> Holding {len(recorded_moves)} commands in RAM.")
                 print(f"========================================")
                 print("\n# --- GENERATED PYTHON SCRIPT ---")
                 for command in python_script_output:
@@ -246,15 +174,14 @@ while True:
     if (play_pressed and not prev_play) or (hub_center_pressed and not prev_hub_center):
         if is_recording:
             print("\n>>> ERROR: Cannot start playback while recording is active.")
-        elif len(recording_slots[selected_slot - 1]) == 0:
-            print(f"\n>>> ERROR: Playback failed. Slot {selected_slot} is empty.")
+        elif len(recorded_moves) == 0:
+            print(f"\n>>> ERROR: Playback failed. No recorded moves.")
             hub.speaker.beep(100, 200)
         else:
-            recorded_moves = recording_slots[selected_slot - 1]
             is_playing = not is_playing
             if is_playing:
                 print(f"\n========================================")
-                print(f">>> STARTING PLAYBACK: Slot {selected_slot}, executing {len(recorded_moves)} commands.")
+                print(f">>> STARTING PLAYBACK: Executing {len(recorded_moves)} commands.")
                 print(f"========================================")
                 hub.speaker.beep(600, 100)
                 hub.speaker.beep(800, 200)
