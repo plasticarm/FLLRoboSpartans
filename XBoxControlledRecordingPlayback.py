@@ -4,10 +4,8 @@ from pybricks.parameters import Port, Direction, Button, Color
 from pybricks.robotics import DriveBase
 from pybricks.iodevices import XboxController
 from pybricks.tools import wait, StopWatch
-import ustruct
 
 hub = PrimeHub()
-hub.system.set_stop_button(Button.BLUETOOTH)
 
 # IMU Initialization
 print("\n>>> Calibrating Gyro - Keep robot still!")
@@ -48,16 +46,7 @@ except Exception:
     print(">>> Running in Hub-Only Competition Mode")
 
 # State Variables
-SLOT_COUNT = 10
-STORAGE_SIZE = 508
-STORAGE_HEADER_SIZE = 3 + SLOT_COUNT
-MOVE_SIZE = 9
-MAX_STORED_MOVES = (STORAGE_SIZE - STORAGE_HEADER_SIZE) // MOVE_SIZE
-STORAGE_MAGIC = b"RS"
-STORAGE_VERSION = 1
 recorded_moves = []
-recording_slots = [[] for _ in range(SLOT_COUNT)]
-selected_slot = 1
 python_script_output = []
 is_recording = False
 is_playing = False
@@ -85,66 +74,51 @@ moving_a, start_a, max_a_duty = False, 0, 0
 moving_b, start_b, max_b_duty = False, 0, 0
 record_start_a, record_start_b = 0, 0
 
+def emit_command(cmd):
+    print(cmd)
+    if is_recording:
+        python_script_output.append(cmd)
 
-def load_recording_slots():
-    try:
-        data = hub.system.storage(0, read=STORAGE_SIZE)
-        if data[0:2] != STORAGE_MAGIC or data[2] != STORAGE_VERSION:
-            return [[] for _ in range(SLOT_COUNT)]
+def finish_active_commands():
+    global moving_y, moving_x, moving_a, moving_b, is_displaying_telemetry
 
-        slots = []
-        offset = STORAGE_HEADER_SIZE
-        for slot_index in range(SLOT_COUNT):
-            moves = []
-            for _ in range(data[3 + slot_index]):
-                if offset + MOVE_SIZE > len(data):
-                    return [[] for _ in range(SLOT_COUNT)]
-                move = ustruct.unpack("<HhhbbB", data[offset:offset + MOVE_SIZE])
-                moves.append((move[0], move[1], move[2], move[3], move[4], move[5] & 1, (move[5] >> 1) & 1))
-                offset += MOVE_SIZE
-            slots.append(moves)
-        return slots
-    except Exception as error:
-        print(f">>> WARNING: Could not load persistent recordings: {error}")
-        return [[] for _ in range(SLOT_COUNT)]
+    if moving_y:
+        moving_y = False
+        dist_cm = round((drive_base.distance() - start_dist) / 10.0)
+        if abs(dist_cm) >= 1:
+            hub.display.number(abs(dist_cm))
+            emit_command(f"Drive({round(max_d_speed)}, {dist_cm})")
+            telemetry_timer.reset()
+            is_displaying_telemetry = True
 
+    if moving_x:
+        moving_x = False
+        rot_deg = round(drive_base.angle() - start_angle)
+        if abs(rot_deg) > 2:
+            hub.display.number(abs(rot_deg))
+            emit_command(f"Rotate({round(max_d_turn)}, {rot_deg})")
+            telemetry_timer.reset()
+            is_displaying_telemetry = True
 
-def save_recording_slot(slot_index, moves):
-    updated_slots = recording_slots[:]
-    updated_slots[slot_index] = moves[:]
-    total_moves = sum(len(slot) for slot in updated_slots)
-    if total_moves > MAX_STORED_MOVES:
-        return False
+    if moving_a:
+        moving_a = False
+        a_deg = round(motor_a.angle() - start_a)
+        if abs(a_deg) > 2:
+            hub.display.number(abs(a_deg))
+            emit_command(f"LeftAttachmentRotate({round(max_a_duty)}, {a_deg})")
+            telemetry_timer.reset()
+            is_displaying_telemetry = True
 
-    data = STORAGE_MAGIC + ustruct.pack("<B", STORAGE_VERSION)
-    for slot in updated_slots:
-        data += ustruct.pack("<B", len(slot))
-    for slot in updated_slots:
-        for move in slot:
-            timestamp, speed, turn, a_duty, b_duty, play_brake, play_gyro = move
-            data += ustruct.pack(
-                "<HhhbbB",
-                max(0, min(65535, round(timestamp))),
-                max(-32768, min(32767, round(speed))),
-                max(-32768, min(32767, round(turn))),
-                max(-128, min(127, round(a_duty))),
-                max(-128, min(127, round(b_duty))),
-                int(play_brake) | (int(play_gyro) << 1),
-            )
-    try:
-        hub.system.storage(0, write=data)
-        return True
-    except Exception as error:
-        print(f">>> ERROR: Could not save slot {slot_index + 1}: {error}")
-        return False
-
-
-recording_slots = load_recording_slots()
+    if moving_b:
+        moving_b = False
+        b_deg = round(motor_b.angle() - start_b)
+        if abs(b_deg) > 2:
+            hub.display.number(abs(b_deg))
+            emit_command(f"RightAttachmentRotate({round(max_b_duty)}, {b_deg})")
+            telemetry_timer.reset()
+            is_displaying_telemetry = True
 
 print("\n>>> System Ready. Waiting for input...")
-print(">>> Hub Left/Right selects a virtual slot; Center plays it.")
-print(">>> Press the hub Bluetooth button to stop the program.")
-hub.display.number(selected_slot)
 
 while True:
     # 1. Hub Button Reading
@@ -177,19 +151,17 @@ while True:
 
     # Global Gyro Toggle (D-Pad Right)
     if dpad_right_pressed and not prev_dpad_right:
+        finish_active_commands()
         use_gyro_global = not use_gyro_global
         drive_base.use_gyro(use_gyro_global)
-        cmd = f"ToggleYawCorrection({use_gyro_global})"
-        print(cmd)
-        if is_recording: python_script_output.append(cmd)
+        emit_command(f"ToggleYawCorrection({use_gyro_global})")
         if use_gyro_global: hub.speaker.beep(600, 100) 
         else: hub.speaker.beep(200, 100) 
 
     # Active Brake Toggle (Y Button)
     if y_held and not prev_y:
-        cmd = "Stop()"
-        print(cmd)
-        if is_recording: python_script_output.append(cmd)
+        finish_active_commands()
+        emit_command("Stop()")
 
     # Attachment Reset (D-Pad Down)
     if dpad_down_pressed:
@@ -206,35 +178,24 @@ while True:
     if a_held: speed_mult = 2.0  
     elif b_held: speed_mult = 0.4  
 
-    if not is_recording and not is_playing:
-        if hub_right_pressed and not prev_hub_right:
-            selected_slot = (selected_slot % SLOT_COUNT) + 1
-            hub.display.number(selected_slot)
-            hub.speaker.beep(400, 100)
-            print(f">>> Selected recording slot {selected_slot}.")
-        elif hub_left_pressed and not prev_hub_left:
-            selected_slot = SLOT_COUNT if selected_slot == 1 else selected_slot - 1
-            hub.display.number(selected_slot)
-            hub.speaker.beep(400, 100)
-            print(f">>> Selected recording slot {selected_slot}.")
-
     # Toggle Recording (Xbox VIEW)
     if record_pressed and not prev_record:
         if not is_playing:
-            is_recording = not is_recording
-            if is_recording:
+            if not is_recording:
                 drive_base.stop()
                 wait(100)
                 hub.imu.reset_heading(0)
                 
-                recorded_moves = []
+                recorded_moves.clear()
                 python_script_output.clear()
                 recorded_time = 0
                 prev_inputs = (0, 0, 0, 0, 0, 1)
                 
                 record_start_a = motor_a.angle()
                 record_start_b = motor_b.angle()
+                moving_y, moving_x, moving_a, moving_b = False, False, False, False
                 
+                is_recording = True
                 hub.display.char("R")
                 is_displaying_telemetry = False
                 print(f"\n========================================")
@@ -242,36 +203,30 @@ while True:
                 print(f"========================================")
                 hub.speaker.beep(1000, 300)
             else:
-                if save_recording_slot(selected_slot - 1, recorded_moves):
-                    recording_slots[selected_slot - 1] = recorded_moves[:]
-                    save_message = f">>> Saved {len(recorded_moves)} moves to persistent slot {selected_slot}."
-                else:
-                    used_moves = sum(len(slot) for slot in recording_slots)
-                    available_moves = MAX_STORED_MOVES - used_moves + len(recording_slots[selected_slot - 1])
-                    save_message = f">>> ERROR: Recording has {len(recorded_moves)} moves; only {available_moves} fit in hub storage."
+                finish_active_commands()
+                is_recording = False
                 hub.display.char("-")
                 print(f"\n========================================")
                 print(f">>> RECORDING STOPPED.")
-                print(save_message)
+                print(f">>> Holding {len(recorded_moves)} commands in RAM.")
                 print(f"========================================")
                 print("\n# --- GENERATED PYTHON SCRIPT ---")
                 for command in python_script_output:
                     print(command)
                 print("# ----------------------------------------------------\n")
 
-    # Toggle virtual recording playback with Xbox MENU or hub CENTER.
+    # Toggle Playback (Controller MENU or Hub CENTER)
     if (play_pressed and not prev_play) or (hub_center_pressed and not prev_hub_center):
         if is_recording:
             print("\n>>> ERROR: Cannot start playback while recording is active.")
-        elif len(recording_slots[selected_slot - 1]) == 0:
-            print(f"\n>>> ERROR: Playback failed. Slot {selected_slot} is empty.")
+        elif len(recorded_moves) == 0:
+            print(f"\n>>> ERROR: Playback failed. No recorded moves.")
             hub.speaker.beep(100, 200)
         else:
-            recorded_moves = recording_slots[selected_slot - 1]
             is_playing = not is_playing
             if is_playing:
                 print(f"\n========================================")
-                print(f">>> STARTING PLAYBACK: Slot {selected_slot}, executing {len(recorded_moves)} commands.")
+                print(f">>> STARTING PLAYBACK: Executing {len(recorded_moves)} commands.")
                 print(f"========================================")
                 hub.speaker.beep(600, 100)
                 hub.speaker.beep(800, 200)
@@ -356,8 +311,8 @@ while True:
 
         if is_recording:
             current_inputs = (d_speed, d_turn, a_duty, b_duty, int(y_held), int(use_gyro_global))
-            recorded_time += 50
-            if current_inputs != prev_inputs:
+            if current_inputs != (0, 0, 0, 0, 0, 1) or prev_inputs != (0, 0, 0, 0, 0, 1):
+                recorded_time += 50
                 recorded_moves.append((recorded_time, d_speed, d_turn, a_duty, b_duty, int(y_held), int(use_gyro_global)))
             prev_inputs = current_inputs
 
@@ -373,9 +328,7 @@ while True:
             dist_cm = round((drive_base.distance() - start_dist) / 10.0)
             if abs(dist_cm) >= 1:
                 hub.display.number(abs(dist_cm))
-                cmd = f"Drive({round(max_d_speed)}, {dist_cm})"
-                print(cmd)
-                if is_recording: python_script_output.append(cmd)
+                emit_command(f"Drive({round(max_d_speed)}, {dist_cm})")
             telemetry_timer.reset()
             is_displaying_telemetry = True
 
@@ -391,9 +344,7 @@ while True:
             rot_deg = round(drive_base.angle() - start_angle)
             if abs(rot_deg) > 2:
                 hub.display.number(abs(rot_deg))
-                cmd = f"Rotate({round(max_d_turn)}, {rot_deg})"
-                print(cmd)
-                if is_recording: python_script_output.append(cmd)
+                emit_command(f"Rotate({round(max_d_turn)}, {rot_deg})")
             telemetry_timer.reset()
             is_displaying_telemetry = True
 
@@ -409,9 +360,7 @@ while True:
             a_deg = round(motor_a.angle() - start_a)
             if abs(a_deg) > 2:
                 hub.display.number(abs(a_deg))
-                cmd = f"LeftAttachmentRotate({round(max_a_duty)}, {a_deg})"
-                print(cmd)
-                if is_recording: python_script_output.append(cmd)
+                emit_command(f"LeftAttachmentRotate({round(max_a_duty)}, {a_deg})")
             telemetry_timer.reset()
             is_displaying_telemetry = True
 
@@ -427,9 +376,7 @@ while True:
             b_deg = round(motor_b.angle() - start_b)
             if abs(b_deg) > 2:
                 hub.display.number(abs(b_deg))
-                cmd = f"RightAttachmentRotate({round(max_b_duty)}, {b_deg})"
-                print(cmd)
-                if is_recording: python_script_output.append(cmd)
+                emit_command(f"RightAttachmentRotate({round(max_b_duty)}, {b_deg})")
             telemetry_timer.reset()
             is_displaying_telemetry = True
 
