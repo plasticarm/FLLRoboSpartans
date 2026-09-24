@@ -3,7 +3,7 @@ from pybricks.pupdevices import Motor
 from pybricks.parameters import Port, Direction, Button, Color
 from pybricks.robotics import DriveBase
 from pybricks.iodevices import XboxController
-from pybricks.tools import wait, StopWatch
+from pybricks.tools import wait
 
 hub = PrimeHub()
 
@@ -46,88 +46,70 @@ except Exception:
     print(">>> Running in Hub-Only Competition Mode")
 
 # State Variables
-recorded_moves = []
-python_script_output = []
 is_recording = False
-is_playing = False
-playback_index = 0
-playback_clock = 0
 
 use_gyro_global = True
 drive_base.use_gyro(use_gyro_global)
 
-recorded_time = 0
-prev_inputs = (0, 0, 0, 0, 0, 1) 
-prev_record, prev_play = False, False
-prev_hub_left, prev_hub_right, prev_hub_center = False, False, False
+prev_record = False
 prev_dpad_right, prev_dpad_down, prev_dpad_left = False, False, False
 prev_y = False
 
-# Telemetry Tracking Variables
-TelemetryDisplayTime = 6000 
-telemetry_timer = StopWatch()
-is_displaying_telemetry = False
-
 moving_y, start_dist, max_d_speed = False, 0, 0
-moving_x, start_angle, max_d_turn = False, 0, 0
+moving_x, last_heading, accumulated_turn, max_d_turn = False, 0, 0, 0
 moving_a, start_a, max_a_duty = False, 0, 0
 moving_b, start_b, max_b_duty = False, 0, 0
 record_start_a, record_start_b = 0, 0
+suppress_drive_until_stop = False
+
+def heading_delta(current_heading, previous_heading):
+    delta = current_heading - previous_heading
+    if delta > 180:
+        delta -= 360
+    elif delta < -180:
+        delta += 360
+    return delta
 
 def emit_command(cmd):
-    print(cmd)
     if is_recording:
-        python_script_output.append(cmd)
+        print(cmd)
 
 def finish_active_commands():
-    global moving_y, moving_x, moving_a, moving_b, is_displaying_telemetry
+    global moving_y, moving_x, moving_a, moving_b, accumulated_turn, last_heading, suppress_drive_until_stop
 
     if moving_y:
         moving_y = False
         dist_cm = round((drive_base.distance() - start_dist) / 10.0)
         if abs(dist_cm) >= 1:
-            hub.display.number(abs(dist_cm))
             emit_command(f"Drive({round(max_d_speed)}, {dist_cm})")
-            telemetry_timer.reset()
-            is_displaying_telemetry = True
 
     if moving_x:
+        current_heading = hub.imu.heading()
+        accumulated_turn += heading_delta(current_heading, last_heading)
+        last_heading = current_heading
         moving_x = False
-        rot_deg = round(drive_base.angle() - start_angle)
+        rot_deg = round(accumulated_turn)
         if abs(rot_deg) > 2:
-            hub.display.number(abs(rot_deg))
             emit_command(f"Rotate({round(max_d_turn)}, {rot_deg})")
-            telemetry_timer.reset()
-            is_displaying_telemetry = True
+        accumulated_turn = 0
+        suppress_drive_until_stop = True
 
     if moving_a:
         moving_a = False
         a_deg = round(motor_a.angle() - start_a)
         if abs(a_deg) > 2:
-            hub.display.number(abs(a_deg))
             emit_command(f"LeftAttachmentRotate({round(max_a_duty)}, {a_deg})")
-            telemetry_timer.reset()
-            is_displaying_telemetry = True
 
     if moving_b:
         moving_b = False
         b_deg = round(motor_b.angle() - start_b)
         if abs(b_deg) > 2:
-            hub.display.number(abs(b_deg))
             emit_command(f"RightAttachmentRotate({round(max_b_duty)}, {b_deg})")
-            telemetry_timer.reset()
-            is_displaying_telemetry = True
 
 print("\n>>> System Ready. Waiting for input...")
 
 while True:
-    # 1. Hub Button Reading
-    hub_pressed = hub.buttons.pressed()
-    hub_left_pressed = Button.LEFT in hub_pressed
-    hub_right_pressed = Button.RIGHT in hub_pressed
-    hub_center_pressed = Button.CENTER in hub_pressed
-
-    # 2. Controller Reading
+    # 1. Controller Reading
     if has_controller:
         pressed = controller.buttons.pressed()
         triggers = controller.triggers()
@@ -137,7 +119,6 @@ while True:
         pressed, triggers, left_stick, right_stick = [], (0, 0), (0, 0), (0, 0)
 
     record_pressed = Button.VIEW in pressed 
-    play_pressed = Button.MENU in pressed
     dpad_right_pressed = Button.RIGHT in pressed
     dpad_down_pressed = Button.DOWN in pressed
     dpad_left_pressed = Button.LEFT in pressed
@@ -180,103 +161,28 @@ while True:
 
     # Toggle Recording (Xbox VIEW)
     if record_pressed and not prev_record:
-        if not is_playing:
-            if not is_recording:
-                drive_base.stop()
-                wait(100)
-                hub.imu.reset_heading(0)
-                
-                recorded_moves.clear()
-                python_script_output.clear()
-                recorded_time = 0
-                prev_inputs = (0, 0, 0, 0, 0, 1)
-                
-                record_start_a = motor_a.angle()
-                record_start_b = motor_b.angle()
-                moving_y, moving_x, moving_a, moving_b = False, False, False, False
-                
-                is_recording = True
-                hub.display.char("R")
-                is_displaying_telemetry = False
-                print(f"\n========================================")
-                print(f">>> RECORDING STARTED <<<")
-                print(f"========================================")
-                hub.speaker.beep(1000, 300)
-            else:
-                finish_active_commands()
-                is_recording = False
-                hub.display.char("-")
-                print(f"\n========================================")
-                print(f">>> RECORDING STOPPED.")
-                print(f">>> Holding {len(recorded_moves)} commands in RAM.")
-                print(f"========================================")
-                print("\n# --- GENERATED PYTHON SCRIPT ---")
-                for command in python_script_output:
-                    print(command)
-                print("# ----------------------------------------------------\n")
-
-    # Toggle Playback (Controller MENU or Hub CENTER)
-    if (play_pressed and not prev_play) or (hub_center_pressed and not prev_hub_center):
         if is_recording:
-            print("\n>>> ERROR: Cannot start playback while recording is active.")
-        elif len(recorded_moves) == 0:
-            print(f"\n>>> ERROR: Playback failed. No recorded moves.")
-            hub.speaker.beep(100, 200)
+            finish_active_commands()
+            is_recording = False
+            hub.speaker.beep(500, 300)
+            print("# ----------------------------------------------------")
+            print(">>> RECORDING STOPPED. Copy the commands above into MissionRunner.py.")
         else:
-            is_playing = not is_playing
-            if is_playing:
-                print(f"\n========================================")
-                print(f">>> STARTING PLAYBACK: Executing {len(recorded_moves)} commands.")
-                print(f"========================================")
-                hub.speaker.beep(600, 100)
-                hub.speaker.beep(800, 200)
-                drive_base.stop()
-                wait(100)
-                hub.imu.reset_heading(0)
-                
-                playback_clock = 0
-                playback_index = 0
-                hub.display.char("P")
-                is_displaying_telemetry = False
-            else:
-                print("\n>>> PLAYBACK CANCELLED manually.")
-                drive_base.stop()
-                motor_a.stop()
-                motor_b.stop()
-                hub.display.char("-")
-
-    # Execution Loops
-    if is_playing:
-        playback_clock += (50 * speed_mult)
-        if playback_index < len(recorded_moves):
-            t, d_speed, d_turn, a_duty, b_duty, play_brake, play_gyro = recorded_moves[playback_index]
-            
-            if playback_clock >= t:
-                play_d_speed = d_speed * speed_mult
-                play_d_turn = d_turn * speed_mult
-                play_a_duty = max(min(a_duty * speed_mult, 100), -100)
-                play_b_duty = max(min(b_duty * speed_mult, 100), -100)
-
-                drive_base.use_gyro(bool(play_gyro))
-
-                if play_brake:
-                    left_motor.hold()
-                    right_motor.hold()
-                else:
-                    drive_base.drive(play_d_speed, play_d_turn)
-
-                motor_a.dc(play_a_duty)
-                motor_b.dc(play_b_duty)
-                playback_index += 1
-        else:
-            is_playing = False
-            print("\n>>> PLAYBACK FINISHED successfully.")
             drive_base.stop()
-            motor_a.stop()
-            motor_b.stop()
-            hub.display.char("-")
-            
-    elif has_controller:
+            wait(100)
+            hub.imu.reset_heading(0)
+
+            record_start_a = motor_a.angle()
+            record_start_b = motor_b.angle()
+            moving_y, moving_x, moving_a, moving_b = False, False, False, False
+            accumulated_turn = 0
+            suppress_drive_until_stop = False
+
+            is_recording = True
+            print("\n# --- GENERATED PYTHON SCRIPT ---")
+            hub.speaker.beep(1000, 300)
+
+    if has_controller:
         # Manual Teleoperation
         left_x = apply_deadzone(left_stick[0])
         left_y = apply_deadzone(left_stick[1])
@@ -309,15 +215,44 @@ while True:
         motor_a.dc(a_duty)
         motor_b.dc(b_duty)
 
-        if is_recording:
-            current_inputs = (d_speed, d_turn, a_duty, b_duty, int(y_held), int(use_gyro_global))
-            if current_inputs != (0, 0, 0, 0, 0, 1) or prev_inputs != (0, 0, 0, 0, 0, 1):
-                recorded_time += 50
-                recorded_moves.append((recorded_time, d_speed, d_turn, a_duty, b_duty, int(y_held), int(use_gyro_global)))
-            prev_inputs = current_inputs
+        # 1. Autonomous Command Generation: Rotation
+        if d_turn != 0 and not moving_x:
+            if moving_y:
+                moving_y = False
+                dist_cm = round((drive_base.distance() - start_dist) / 10.0)
+                if abs(dist_cm) >= 1:
+                    emit_command(f"Drive({round(max_d_speed)}, {dist_cm})")
+            moving_x = True
+            last_heading = hub.imu.heading()
+            accumulated_turn = 0
+            max_d_turn = abs(d_turn)
+        elif d_turn != 0 and moving_x:
+            current_heading = hub.imu.heading()
+            accumulated_turn += heading_delta(current_heading, last_heading)
+            last_heading = current_heading
+            max_d_turn = max(max_d_turn, abs(d_turn))
+        elif d_turn == 0 and moving_x:
+            current_heading = hub.imu.heading()
+            accumulated_turn += heading_delta(current_heading, last_heading)
+            last_heading = current_heading
+            moving_x = False
+            rot_deg = round(accumulated_turn)
+            if abs(rot_deg) > 2:
+                emit_command(f"Rotate({round(max_d_turn)}, {rot_deg})")
+            accumulated_turn = 0
+            suppress_drive_until_stop = True
 
-        # 1. Autonomous Command Generation: Distance
-        if d_speed != 0 and not moving_y:
+        # 2. Autonomous Command Generation: Distance
+        if d_speed == 0:
+            suppress_drive_until_stop = False
+
+        if d_turn != 0 or suppress_drive_until_stop:
+            if moving_y:
+                moving_y = False
+                dist_cm = round((drive_base.distance() - start_dist) / 10.0)
+                if abs(dist_cm) >= 1:
+                    emit_command(f"Drive({round(max_d_speed)}, {dist_cm})")
+        elif d_speed != 0 and not moving_y:
             moving_y = True
             start_dist = drive_base.distance()
             max_d_speed = abs(d_speed)
@@ -327,26 +262,7 @@ while True:
             moving_y = False
             dist_cm = round((drive_base.distance() - start_dist) / 10.0)
             if abs(dist_cm) >= 1:
-                hub.display.number(abs(dist_cm))
                 emit_command(f"Drive({round(max_d_speed)}, {dist_cm})")
-            telemetry_timer.reset()
-            is_displaying_telemetry = True
-
-        # 2. Autonomous Command Generation: Rotation
-        if d_turn != 0 and not moving_x:
-            moving_x = True
-            start_angle = drive_base.angle()
-            max_d_turn = abs(d_turn)
-        elif d_turn != 0 and moving_x:
-            max_d_turn = max(max_d_turn, abs(d_turn))
-        elif d_turn == 0 and moving_x:
-            moving_x = False
-            rot_deg = round(drive_base.angle() - start_angle)
-            if abs(rot_deg) > 2:
-                hub.display.number(abs(rot_deg))
-                emit_command(f"Rotate({round(max_d_turn)}, {rot_deg})")
-            telemetry_timer.reset()
-            is_displaying_telemetry = True
 
         # 3. Autonomous Command Generation: Motor A
         if a_duty != 0 and not moving_a:
@@ -359,10 +275,7 @@ while True:
             moving_a = False
             a_deg = round(motor_a.angle() - start_a)
             if abs(a_deg) > 2:
-                hub.display.number(abs(a_deg))
                 emit_command(f"LeftAttachmentRotate({round(max_a_duty)}, {a_deg})")
-            telemetry_timer.reset()
-            is_displaying_telemetry = True
 
         # 4. Autonomous Command Generation: Motor B
         if b_duty != 0 and not moving_b:
@@ -375,21 +288,10 @@ while True:
             moving_b = False
             b_deg = round(motor_b.angle() - start_b)
             if abs(b_deg) > 2:
-                hub.display.number(abs(b_deg))
                 emit_command(f"RightAttachmentRotate({round(max_b_duty)}, {b_deg})")
-            telemetry_timer.reset()
-            is_displaying_telemetry = True
-
-    if is_displaying_telemetry and telemetry_timer.time() > TelemetryDisplayTime:
-        hub.display.off()
-        is_displaying_telemetry = False
 
     # Debouncing Updates
     prev_record = record_pressed
-    prev_play = play_pressed
-    prev_hub_left = hub_left_pressed
-    prev_hub_right = hub_right_pressed
-    prev_hub_center = hub_center_pressed
     prev_dpad_right = dpad_right_pressed
     prev_dpad_down = dpad_down_pressed
     prev_dpad_left = dpad_left_pressed
