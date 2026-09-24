@@ -7,7 +7,6 @@ from pybricks.tools import wait, StopWatch
 import ustruct
 
 hub = PrimeHub()
-hub.system.set_stop_button(Button.BLUETOOTH)
 
 # IMU Initialization
 print("\n>>> Calibrating Gyro - Keep robot still!")
@@ -142,8 +141,6 @@ def save_recording_slot(slot_index, moves):
 recording_slots = load_recording_slots()
 
 print("\n>>> System Ready. Waiting for input...")
-print(">>> Hub Left/Right selects a virtual slot; Center plays it.")
-print(">>> Press the hub Bluetooth button to stop the program.")
 hub.display.number(selected_slot)
 
 while True:
@@ -259,7 +256,7 @@ while True:
                     print(command)
                 print("# ----------------------------------------------------\n")
 
-    # Toggle virtual recording playback with Xbox MENU or hub CENTER.
+    # Toggle Playback (Controller MENU or Hub CENTER)
     if (play_pressed and not prev_play) or (hub_center_pressed and not prev_hub_center):
         if is_recording:
             print("\n>>> ERROR: Cannot start playback while recording is active.")
