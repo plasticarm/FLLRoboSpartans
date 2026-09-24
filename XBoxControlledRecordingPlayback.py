@@ -74,6 +74,50 @@ moving_a, start_a, max_a_duty = False, 0, 0
 moving_b, start_b, max_b_duty = False, 0, 0
 record_start_a, record_start_b = 0, 0
 
+def emit_command(cmd):
+    print(cmd)
+    if is_recording:
+        python_script_output.append(cmd)
+
+def finish_active_commands():
+    global moving_y, moving_x, moving_a, moving_b, is_displaying_telemetry
+
+    if moving_y:
+        moving_y = False
+        dist_cm = round((drive_base.distance() - start_dist) / 10.0)
+        if abs(dist_cm) >= 1:
+            hub.display.number(abs(dist_cm))
+            emit_command(f"Drive({round(max_d_speed)}, {dist_cm})")
+            telemetry_timer.reset()
+            is_displaying_telemetry = True
+
+    if moving_x:
+        moving_x = False
+        rot_deg = round(drive_base.angle() - start_angle)
+        if abs(rot_deg) > 2:
+            hub.display.number(abs(rot_deg))
+            emit_command(f"Rotate({round(max_d_turn)}, {rot_deg})")
+            telemetry_timer.reset()
+            is_displaying_telemetry = True
+
+    if moving_a:
+        moving_a = False
+        a_deg = round(motor_a.angle() - start_a)
+        if abs(a_deg) > 2:
+            hub.display.number(abs(a_deg))
+            emit_command(f"LeftAttachmentRotate({round(max_a_duty)}, {a_deg})")
+            telemetry_timer.reset()
+            is_displaying_telemetry = True
+
+    if moving_b:
+        moving_b = False
+        b_deg = round(motor_b.angle() - start_b)
+        if abs(b_deg) > 2:
+            hub.display.number(abs(b_deg))
+            emit_command(f"RightAttachmentRotate({round(max_b_duty)}, {b_deg})")
+            telemetry_timer.reset()
+            is_displaying_telemetry = True
+
 print("\n>>> System Ready. Waiting for input...")
 
 while True:
@@ -107,19 +151,17 @@ while True:
 
     # Global Gyro Toggle (D-Pad Right)
     if dpad_right_pressed and not prev_dpad_right:
+        finish_active_commands()
         use_gyro_global = not use_gyro_global
         drive_base.use_gyro(use_gyro_global)
-        cmd = f"ToggleYawCorrection({use_gyro_global})"
-        print(cmd)
-        if is_recording: python_script_output.append(cmd)
+        emit_command(f"ToggleYawCorrection({use_gyro_global})")
         if use_gyro_global: hub.speaker.beep(600, 100) 
         else: hub.speaker.beep(200, 100) 
 
     # Active Brake Toggle (Y Button)
     if y_held and not prev_y:
-        cmd = "Stop()"
-        print(cmd)
-        if is_recording: python_script_output.append(cmd)
+        finish_active_commands()
+        emit_command("Stop()")
 
     # Attachment Reset (D-Pad Down)
     if dpad_down_pressed:
@@ -139,8 +181,7 @@ while True:
     # Toggle Recording (Xbox VIEW)
     if record_pressed and not prev_record:
         if not is_playing:
-            is_recording = not is_recording
-            if is_recording:
+            if not is_recording:
                 drive_base.stop()
                 wait(100)
                 hub.imu.reset_heading(0)
@@ -152,7 +193,9 @@ while True:
                 
                 record_start_a = motor_a.angle()
                 record_start_b = motor_b.angle()
+                moving_y, moving_x, moving_a, moving_b = False, False, False, False
                 
+                is_recording = True
                 hub.display.char("R")
                 is_displaying_telemetry = False
                 print(f"\n========================================")
@@ -160,6 +203,8 @@ while True:
                 print(f"========================================")
                 hub.speaker.beep(1000, 300)
             else:
+                finish_active_commands()
+                is_recording = False
                 hub.display.char("-")
                 print(f"\n========================================")
                 print(f">>> RECORDING STOPPED.")
@@ -283,9 +328,7 @@ while True:
             dist_cm = round((drive_base.distance() - start_dist) / 10.0)
             if abs(dist_cm) >= 1:
                 hub.display.number(abs(dist_cm))
-                cmd = f"Drive({round(max_d_speed)}, {dist_cm})"
-                print(cmd)
-                if is_recording: python_script_output.append(cmd)
+                emit_command(f"Drive({round(max_d_speed)}, {dist_cm})")
             telemetry_timer.reset()
             is_displaying_telemetry = True
 
@@ -301,9 +344,7 @@ while True:
             rot_deg = round(drive_base.angle() - start_angle)
             if abs(rot_deg) > 2:
                 hub.display.number(abs(rot_deg))
-                cmd = f"Rotate({round(max_d_turn)}, {rot_deg})"
-                print(cmd)
-                if is_recording: python_script_output.append(cmd)
+                emit_command(f"Rotate({round(max_d_turn)}, {rot_deg})")
             telemetry_timer.reset()
             is_displaying_telemetry = True
 
@@ -319,9 +360,7 @@ while True:
             a_deg = round(motor_a.angle() - start_a)
             if abs(a_deg) > 2:
                 hub.display.number(abs(a_deg))
-                cmd = f"LeftAttachmentRotate({round(max_a_duty)}, {a_deg})"
-                print(cmd)
-                if is_recording: python_script_output.append(cmd)
+                emit_command(f"LeftAttachmentRotate({round(max_a_duty)}, {a_deg})")
             telemetry_timer.reset()
             is_displaying_telemetry = True
 
@@ -337,9 +376,7 @@ while True:
             b_deg = round(motor_b.angle() - start_b)
             if abs(b_deg) > 2:
                 hub.display.number(abs(b_deg))
-                cmd = f"RightAttachmentRotate({round(max_b_duty)}, {b_deg})"
-                print(cmd)
-                if is_recording: python_script_output.append(cmd)
+                emit_command(f"RightAttachmentRotate({round(max_b_duty)}, {b_deg})")
             telemetry_timer.reset()
             is_displaying_telemetry = True
 
