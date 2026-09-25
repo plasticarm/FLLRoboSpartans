@@ -22,7 +22,11 @@ motor_a = Motor(Port.A)
 motor_b = Motor(Port.E, Direction.COUNTERCLOCKWISE)
 
 # Input Scaling & Deadzone
-def apply_deadzone(stick, threshold=7):
+DRIVE_MAX_SPEED = 220
+PRECISION_TURN_RATE = 25
+TURN_RATE = 90
+
+def apply_deadzone(stick, threshold=10):
     if -threshold <= stick <= threshold:
         return 0.0
     elif stick > threshold:
@@ -190,9 +194,9 @@ while True:
         left_trigger = apply_deadzone(triggers[0])
         right_trigger = apply_deadzone(triggers[1])
 
-        d_speed_base = exp_scale(left_y, 250) 
-        left_turn_base = exp_scale(left_x, 37.5) if x_held else 0
-        right_turn_base = exp_scale(right_x, 150)
+        d_speed_base = exp_scale(left_y, DRIVE_MAX_SPEED) 
+        left_turn_base = exp_scale(left_x, PRECISION_TURN_RATE) if x_held else 0
+        right_turn_base = exp_scale(right_x, TURN_RATE)
         
         d_turn_base = left_turn_base + right_turn_base
         
