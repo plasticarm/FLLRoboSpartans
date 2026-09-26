@@ -88,20 +88,10 @@ def Stop():
 
 def run_recording():
     # --- PASTE RECORDING BELOW THIS LINE ---
-    Drive(220, 6)
-    Rotate(90, -60)
+    Rotate(100, -55)
     Drive(220, 60)
-    Rotate(90, 60)
-    Drive(220, 20)
-    Rotate(90, 25)
-    Drive(50, 30)
-    Drive(220, -10)
-    Rotate(220, 60)
-    Drive(220, 10)
-    Rotate(100, 30)
-    Drive(220, 20)
-    Rotate(100, 20)
-    Drive(220, 40)
+    Rotate(100, -40)
+    Drive(220, 100)
     Stop()
 
 # 4. Run once when this program is started from its physical hub slot.
