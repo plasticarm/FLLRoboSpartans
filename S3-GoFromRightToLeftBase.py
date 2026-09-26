@@ -87,7 +87,7 @@ def Stop():
 # 3. Paste the generated python commands from your controller terminal here.
 
 def run_recording():
-    # --- PASTE RECORDING BELOW THIS LINE ---
+    # Move from right to left base
     Rotate(100, -55)
     Drive(220, 60)
     Rotate(100, -40)

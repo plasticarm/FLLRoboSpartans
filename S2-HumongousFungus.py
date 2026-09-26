@@ -87,7 +87,7 @@ def Stop():
 # 3. Paste the generated python commands from your controller terminal here.
 
 def run_recording():
-    # --- PASTE RECORDING BELOW THIS LINE ---
+    # Humongous Fungus: 20 Points, 10 Points Bonus From Other Team
     Rotate(100, -45)
     Drive(220, 10)
     Rotate(100, 45)

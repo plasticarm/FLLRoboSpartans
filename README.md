@@ -102,3 +102,43 @@ def run_recording():
 - Return sticks to neutral briefly between separate actions so the recorder can split commands cleanly.
 - Use `Y` when you want an explicit `Stop()` in the generated mission.
 - Record a short test first, paste it into [MissionRunner.py](MissionRunner.py), and verify it before recording a full mission.
+
+
+# Missions
+
+## Possible Missions
+
+<table width="100%">
+<thead>
+<tr><th>Mission Name</th><th><div align="right">Points</div></th></tr>
+</thead>
+<tbody>
+<tr><td>Exploding Seeds</td><td align="right">30</td></tr>
+<tr><td>Flip The Rock</td><td align="right">30</td></tr>
+<tr><td>Lucky Leaves</td><td align="right">30</td></tr>
+<tr><td>Reaching Roots</td><td align="right">20</td></tr>
+<tr><td>Tangled</td><td align="right">30</td></tr>
+<tr><td>Research Platform</td><td align="right">30</td></tr>
+<tr><td>Forest Elder</td><td align="right">30</td></tr>
+<tr><td>Keystone Species</td><td align="right">30</td></tr>
+<tr><td>Biocentric Architecture</td><td align="right">40</td></tr>
+<tr><td><strong>Total Possible</strong></td><td align="right"><strong>270</strong></td></tr>
+</tbody>
+</table>
+
+## Our Missions
+
+<table width="100%">
+<thead>
+<tr><th>Slot</th><th>Mission Name</th><th><div align="right">Points</div></th></tr>
+</thead>
+<tbody>
+<tr><td>No Slot</td><td>Base</td><td align="right">90</td></tr>
+<tr><td>Slot 1</td><td>Leaf Frenzy</td><td align="right">40</td></tr>
+<tr><td>Slot 1</td><td>Window To The Past</td><td align="right">20</td></tr>
+<tr><td>Slot 2</td><td>Humongous Fungus</td><td align="right">20</td></tr>
+<tr><td>Slot 3</td><td>Go Between Bases</td><td align="right">0</td></tr>
+<tr><td>Slot 4</td><td>Drone Survey</td><td align="right">30</td></tr>
+<tr><td colspan="2"><strong>Total Possible</strong></td><td align="right"><strong>200</strong></td></tr>
+</tbody>
+</table>
