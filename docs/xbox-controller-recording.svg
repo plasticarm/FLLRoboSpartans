@@ -1,0 +1,129 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="780" viewBox="0 0 1200 780" role="img" aria-labelledby="title desc">
+  <title id="title">Xbox controller recording controls</title>
+  <desc id="desc">Diagram labeling the Xbox controller buttons used by the FLL RoboSpartans recorder program.</desc>
+  <defs>
+    <style>
+      .bg { fill: #f7f7f2; }
+      .controller { fill: #22262b; stroke: #111; stroke-width: 4; }
+      .panel { fill: #2e333a; stroke: #15191d; stroke-width: 3; }
+      .button { fill: #f1f1ea; stroke: #1a1a1a; stroke-width: 3; }
+      .dark-button { fill: #151719; stroke: #050505; stroke-width: 3; }
+      .stick { fill: #3f464f; stroke: #111; stroke-width: 4; }
+      .stick-top { fill: #20242a; stroke: #0b0d10; stroke-width: 3; }
+      .trigger { fill: #3a4048; stroke: #121417; stroke-width: 3; }
+      .label { fill: #171717; font-family: Verdana, Geneva, sans-serif; font-size: 25px; font-weight: 700; }
+      .small { fill: #202020; font-family: Verdana, Geneva, sans-serif; font-size: 19px; font-weight: 500; }
+      .tiny { fill: #202020; font-family: Verdana, Geneva, sans-serif; font-size: 16px; font-weight: 500; }
+      .callout { fill: none; stroke: #315c8a; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+      .callout2 { fill: none; stroke: #9a5c21; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+      .box { fill: #ffffff; stroke: #c8c5b8; stroke-width: 2; rx: 8; }
+      .accent { fill: #315c8a; }
+      .orange { fill: #9a5c21; }
+      .green { fill: #23824c; }
+      .red { fill: #9e2f2f; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="1200" height="780"/>
+  <text x="48" y="58" class="label">Xbox Controller Controls for Recording</text>
+  <text x="48" y="88" class="small">Recorder program: XBoxControlledRecordingPlayback.py</text>
+
+  <!-- Controller body -->
+  <path class="controller" d="M309 245 C252 250 214 291 196 362 L151 538 C136 598 171 643 229 629 L346 601 C384 592 414 608 444 634 C482 667 527 678 600 678 C673 678 718 667 756 634 C786 608 816 592 854 601 L971 629 C1029 643 1064 598 1049 538 L1004 362 C986 291 948 250 891 245 C823 239 785 264 746 291 C707 318 665 326 600 326 C535 326 493 318 454 291 C415 264 377 239 309 245 Z"/>
+  <path class="panel" d="M442 257 C480 285 528 298 600 298 C672 298 720 285 758 257 C781 299 790 354 774 411 C751 493 684 530 600 530 C516 530 449 493 426 411 C410 354 419 299 442 257 Z"/>
+
+  <!-- top triggers/shoulders -->
+  <rect x="260" y="158" width="170" height="54" rx="18" class="trigger"/>
+  <text x="307" y="192" class="button">LB</text>
+  <rect x="770" y="158" width="170" height="54" rx="18" class="trigger"/>
+  <text x="816" y="192" class="button">RB</text>
+  <rect x="270" y="102" width="150" height="42" rx="16" class="trigger"/>
+  <text x="309" y="130" class="button">LT</text>
+  <rect x="780" y="102" width="150" height="42" rx="16" class="trigger"/>
+  <text x="819" y="130" class="button">RT</text>
+
+  <!-- sticks -->
+  <circle cx="381" cy="414" r="70" class="stick"/>
+  <circle cx="381" cy="414" r="42" class="stick-top"/>
+  <circle cx="705" cy="470" r="70" class="stick"/>
+  <circle cx="705" cy="470" r="42" class="stick-top"/>
+
+  <!-- D-pad -->
+  <rect x="306" y="512" width="144" height="48" rx="10" class="dark-button"/>
+  <rect x="354" y="464" width="48" height="144" rx="10" class="dark-button"/>
+
+  <!-- face buttons -->
+  <circle cx="866" cy="339" r="30" class="button"/><text x="856" y="348" class="small">Y</text>
+  <circle cx="927" cy="400" r="30" class="button"/><text x="917" y="409" class="small">B</text>
+  <circle cx="805" cy="400" r="30" class="button"/><text x="795" y="409" class="small">X</text>
+  <circle cx="866" cy="461" r="30" class="button"/><text x="856" y="470" class="small">A</text>
+
+  <!-- center buttons -->
+  <circle cx="600" cy="402" r="38" fill="#e8e8df" stroke="#111" stroke-width="3"/>
+  <text x="589" y="411" class="small">X</text>
+  <circle cx="540" cy="405" r="18" class="dark-button"/>
+  <circle cx="660" cy="405" r="18" class="dark-button"/>
+  <text x="511" y="447" class="tiny">VIEW</text>
+  <text x="635" y="447" class="tiny">MENU</text>
+
+  <!-- Callout boxes -->
+  <rect x="42" y="132" width="245" height="96" class="box"/>
+  <text x="60" y="162" class="label">LT</text>
+  <text x="60" y="192" class="small">Motor B reverse</text>
+  <path class="callout" d="M287 178 L336 128"/>
+
+  <rect x="42" y="244" width="272" height="112" class="box"/>
+  <text x="60" y="274" class="label">Left Stick</text>
+  <text x="60" y="304" class="small">Up/down: drive</text>
+  <text x="60" y="331" class="small">Left/right + X: slow turn</text>
+  <path class="callout" d="M314 326 L355 392"/>
+
+  <rect x="42" y="382" width="245" height="82" class="box"/>
+  <text x="60" y="412" class="label">D-pad Right</text>
+  <text x="60" y="442" class="small">Toggle yaw correction</text>
+  <path class="callout" d="M287 423 L449 536"/>
+
+  <rect x="42" y="488" width="245" height="82" class="box"/>
+  <text x="60" y="518" class="label">D-pad Down</text>
+  <text x="60" y="548" class="small">Reset attachments</text>
+  <path class="callout" d="M287 529 L378 590"/>
+
+  <rect x="438" y="112" width="268" height="96" class="box"/>
+  <text x="456" y="142" class="label">VIEW</text>
+  <text x="456" y="172" class="small">Start / stop recording</text>
+  <path class="callout2" d="M572 208 L544 389"/>
+
+  <rect x="714" y="112" width="210" height="96" class="box"/>
+  <text x="732" y="142" class="label">RT / RB</text>
+  <text x="732" y="172" class="small">Motor A forward / reverse</text>
+  <path class="callout" d="M824 208 L854 144"/>
+
+  <rect x="944" y="164" width="214" height="96" class="box"/>
+  <text x="962" y="194" class="label">Y</text>
+  <text x="962" y="224" class="small">Record Stop()</text>
+  <path class="callout2" d="M944 220 L888 337"/>
+
+  <rect x="944" y="284" width="214" height="86" class="box"/>
+  <text x="962" y="314" class="label">B</text>
+  <text x="962" y="344" class="small">Slow mode</text>
+  <path class="callout" d="M944 334 L924 391"/>
+
+  <rect x="944" y="394" width="214" height="86" class="box"/>
+  <text x="962" y="424" class="label">A</text>
+  <text x="962" y="454" class="small">Fast mode</text>
+  <path class="callout" d="M944 444 L891 463"/>
+
+  <rect x="902" y="514" width="256" height="86" class="box"/>
+  <text x="920" y="544" class="label">Right Stick</text>
+  <text x="920" y="574" class="small">Left/right: turn</text>
+  <path class="callout" d="M902 558 L743 489"/>
+
+  <rect x="486" y="612" width="254" height="86" class="box"/>
+  <text x="504" y="642" class="label">LB</text>
+  <text x="504" y="672" class="small">Motor B forward</text>
+  <path class="callout" d="M512 612 L362 212"/>
+
+  <rect x="787" y="625" width="324" height="64" class="box"/>
+  <text x="805" y="653" class="small">MENU is unused by the current recorder.</text>
+  <path class="callout2" d="M790 648 L674 420"/>
+</svg>
