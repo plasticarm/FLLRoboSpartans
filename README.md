@@ -108,6 +108,8 @@ def run_recording():
 
 ## Possible Missions
 
+<a href="https://www.youtube.com/watch?v=uhZZ8O1StiQ">Mission Videos</a>
+
 <table width="100%">
 <thead>
 <tr><th>Mission Name</th><th><div align="right">Points</div></th></tr>
