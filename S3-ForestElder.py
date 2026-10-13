@@ -87,11 +87,18 @@ def Stop():
 # 3. Paste the generated python commands from your controller terminal here.
 
 def run_recording():
-    # Move from right to left base
-    Rotate(100, -55)
-    Drive(220, 60)
-    Rotate(100, -40)
-    Drive(220, 100)
+    # --- PASTE RECORDING BELOW THIS LINE ---
+    Drive(220, 6)
+    Rotate(90, -10)
+    Drive(220, 58)
+    Rotate(90, 95)
+    RightAttachmentRotate(50, 20)
+    Drive(50, 10)
+    RightAttachmentRotate(100, -100)
+    RightAttachmentRotate(100, 100)
+    Drive(50, -5)
+    Rotate(90, -95)
+    Drive(220, -60)
     Stop()
 
 # 4. Run once when this program is started from its physical hub slot.

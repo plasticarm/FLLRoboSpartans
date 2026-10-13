@@ -108,6 +108,8 @@ def run_recording():
 
 ## Possible Missions
 
+<a href="https://www.youtube.com/watch?v=uhZZ8O1StiQ">Mission Videos</a>
+
 <table width="100%">
 <thead>
 <tr><th>Mission Name</th><th><div align="right">Points</div></th></tr>
@@ -119,10 +121,9 @@ def run_recording():
 <tr><td>Reaching Roots</td><td align="right">20</td></tr>
 <tr><td>Tangled</td><td align="right">30</td></tr>
 <tr><td>Research Platform</td><td align="right">30</td></tr>
-<tr><td>Forest Elder</td><td align="right">30</td></tr>
 <tr><td>Keystone Species</td><td align="right">30</td></tr>
 <tr><td>Biocentric Architecture</td><td align="right">40</td></tr>
-<tr><td><strong>Total Possible</strong></td><td align="right"><strong>270</strong></td></tr>
+<tr><td><strong>Total Possible</strong></td><td align="right"><strong>240</strong></td></tr>
 </tbody>
 </table>
 
@@ -137,8 +138,8 @@ def run_recording():
 <tr><td>Slot 1</td><td>Leaf Frenzy</td><td align="right">40</td></tr>
 <tr><td>Slot 1</td><td>Window To The Past</td><td align="right">20</td></tr>
 <tr><td>Slot 2</td><td>Humongous Fungus</td><td align="right">20</td></tr>
-<tr><td>Slot 3</td><td>Go Between Bases</td><td align="right">0</td></tr>
+<tr><td>Slot 3</td><td>Forest Elder</td><td align="right">20</td></tr>
 <tr><td>Slot 4</td><td>Drone Survey</td><td align="right">30</td></tr>
-<tr><td colspan="2"><strong>Total Possible</strong></td><td align="right"><strong>200</strong></td></tr>
+<tr><td colspan="2"><strong>Total Possible</strong></td><td align="right"><strong>220</strong></td></tr>
 </tbody>
 </table>
