@@ -97,6 +97,17 @@ def run_recording():
     Rotate(100, 10)
     Drive(220, -71)
     Stop()
+    # Drone Survey: 30 Points (B)
+    """
+    Drive(250, 71)
+    Drive(250, -2)
+    Rotate(150, -40)
+    Rotate(150, -3)
+    Rotate(150, 40)
+    Rotate(150, 4)
+    Drive(250, -68)
+    Stop()
+    """
 
 # 4. Run once when this program is started from its physical hub slot.
 print("\n>>> Running recording...")
