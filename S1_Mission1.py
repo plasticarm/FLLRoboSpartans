@@ -67,10 +67,10 @@ def Rotate(speed, angle_deg):
 
 def LeftAttachmentRotate(speed, angle_deg):
     # Multiplies the 0-100 duty value by 10 to convert to degrees per second[cite: 2]
-    motor_a.run_angle(abs(speed) * 10, angle_deg, wait=True)
+    motor_b.run_angle(abs(speed) * 10, angle_deg, wait=True)
 
 def RightAttachmentRotate(speed, angle_deg):
-    motor_b.run_angle(abs(speed) * 10, angle_deg, wait=True)
+    motor_a.run_angle(abs(speed) * 10, angle_deg, wait=True)
 
 def ToggleYawCorrection(state):
     global yaw_correction_enabled
@@ -84,30 +84,49 @@ def Stop():
     motor_a.stop()
     motor_b.stop()
 
+def AttachmentReset():
+    LeftAttachmentRotate(100, 30)
+    RightAttachmentRotate(100, 30)
+    LeftAttachmentRotate(100, -180)
+    RightAttachmentRotate(100, -180)
+
 # 3. Paste the generated python commands from your controller terminal here.
 
 def run_recording():
-    # Drone Survey: 30 Points
-    Drive(220, 70)
-    Rotate(50, -25)
-    Drive(50, 0)
-    Rotate(200, -15)
-    Rotate(100, 30)
-    Drive(220, -5)
-    Rotate(100, 10)
-    Drive(220, -71)
+    # Leafcutter Frenzy: 40 Points
+    AttachmentReset()
+    Drive(220, 6)
+    Rotate(90, -60)
+    Drive(220, 60)
+    Rotate(90, 60)
+    Drive(220, 20)
+    Rotate(90, 25)
+    Drive(50, 35)
+    # Window to the past: 20 Points
+    Drive(220, -10)
+    Rotate(220, 60)
+    Drive(220, 10)
+    Rotate(100, 41)
+    Drive(220, 10)
+    Drive(200, -10)
+    # Forest Elder: 30 Points
+    Rotate(220, -40)
+    LeftAttachmentRotate(100, 180)
+    Drive(220, 26)
+    LeftAttachmentRotate(100, -100)
+    LeftAttachmentRotate(100, 100)
+    Drive(50, -10)
+    # Humongous Fungus: 30 Points
+    LeftAttachmentRotate(100, -180)
+    Drive(50, 3)
+    Rotate(90, -95)
+    RightAttachmentRotate(100, 180)
+    Rotate(100, -20)
+    Drive(100, -10)
+    Drive(100, 10)
+    Rotate(100, 20)
+    Drive(1000, -65)
     Stop()
-    # Drone Survey: 30 Points (B)
-    """
-    Drive(250, 71)
-    Drive(250, -2)
-    Rotate(150, -40)
-    Rotate(150, -3)
-    Rotate(150, 40)
-    Rotate(150, 4)
-    Drive(250, -68)
-    Stop()
-    """
 
 # 4. Run once when this program is started from its physical hub slot.
 print("\n>>> Running recording...")

@@ -87,22 +87,14 @@ def Stop():
 # 3. Paste the generated python commands from your controller terminal here.
 
 def run_recording():
-    # Leafcutter Frenzy: 40 Points
-    # Window To The Past: 20 Points
-    Drive(220, 6)
-    Rotate(90, -60)
-    Drive(220, 60)
-    Rotate(90, 60)
-    Drive(220, 20)
-    Rotate(90, 25)
-    Drive(50, 30)
-    Drive(220, -10)
-    Rotate(220, 60)
-    Drive(220, 10)
-    Rotate(100, 30)
-    Drive(220, 20)
-    Rotate(100, 20)
-    Drive(220, 40)
+    # Drone Survey: 30 Points
+    Drive(250, 71)
+    Drive(250, -2)
+    Rotate(150, -40)
+    Rotate(150, -3)
+    Rotate(150, 40)
+    Rotate(150, 4)
+    Drive(250, -68)
     Stop()
 
 # 4. Run once when this program is started from its physical hub slot.
