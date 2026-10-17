@@ -67,10 +67,10 @@ def Rotate(speed, angle_deg):
 
 def LeftAttachmentRotate(speed, angle_deg):
     # Multiplies the 0-100 duty value by 10 to convert to degrees per second[cite: 2]
-    motor_a.run_angle(abs(speed) * 10, angle_deg, wait=True)
+    motor_b.run_angle(abs(speed) * 10, angle_deg, wait=True)
 
 def RightAttachmentRotate(speed, angle_deg):
-    motor_b.run_angle(abs(speed) * 10, angle_deg, wait=True)
+    motor_a.run_angle(abs(speed) * 10, angle_deg, wait=True)
 
 def ToggleYawCorrection(state):
     global yaw_correction_enabled
@@ -84,11 +84,18 @@ def Stop():
     motor_a.stop()
     motor_b.stop()
 
+def AttachmentReset():
+    LeftAttachmentRotate(100, 30)
+    RightAttachmentRotate(100, 30)
+    LeftAttachmentRotate(100, -180)
+    RightAttachmentRotate(100, -180)
+
 # 3. Paste the generated python commands from your controller terminal here.
 
 def run_recording():
     # Leafcutter Frenzy: 40 Points
     # Window To The Past: 20 Points
+    AttachmentReset()
     Drive(220, 6)
     Rotate(90, -60)
     Drive(220, 60)
@@ -99,7 +106,7 @@ def run_recording():
     Drive(220, -10)
     Rotate(220, 60)
     Drive(220, 10)
-    Rotate(100, 33)
+    Rotate(100, 40)
     Drive(220, 20)
     Rotate(100, 20)
     Drive(220, 40)

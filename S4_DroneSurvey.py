@@ -67,10 +67,10 @@ def Rotate(speed, angle_deg):
 
 def LeftAttachmentRotate(speed, angle_deg):
     # Multiplies the 0-100 duty value by 10 to convert to degrees per second[cite: 2]
-    motor_a.run_angle(abs(speed) * 10, angle_deg, wait=True)
+    motor_b.run_angle(abs(speed) * 10, angle_deg, wait=True)
 
 def RightAttachmentRotate(speed, angle_deg):
-    motor_b.run_angle(abs(speed) * 10, angle_deg, wait=True)
+    motor_a.run_angle(abs(speed) * 10, angle_deg, wait=True)
 
 def ToggleYawCorrection(state):
     global yaw_correction_enabled
@@ -84,16 +84,20 @@ def Stop():
     motor_a.stop()
     motor_b.stop()
 
+def AttachmentReset():
+    LeftAttachmentRotate(100, 30)
+    RightAttachmentRotate(100, 30)
+    LeftAttachmentRotate(100, -180)
+    RightAttachmentRotate(100, -180)
+
 # 3. Paste the generated python commands from your controller terminal here.
 
 def run_recording():
     # Drone Survey: 30 Points
-    Drive(250, 71)
-    Drive(250, -2)
-    Rotate(150, -40)
-    Rotate(150, -3)
-    Rotate(150, 40)
-    Rotate(150, 4)
+    Drive(250, 72)
+    Drive(250, -1)
+    Rotate(150, -50)
+    Rotate(600, 55)
     Drive(250, -68)
     Stop()
 

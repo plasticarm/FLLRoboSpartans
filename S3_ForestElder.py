@@ -67,10 +67,10 @@ def Rotate(speed, angle_deg):
 
 def LeftAttachmentRotate(speed, angle_deg):
     # Multiplies the 0-100 duty value by 10 to convert to degrees per second[cite: 2]
-    motor_a.run_angle(abs(speed) * 10, angle_deg, wait=True)
+    motor_b.run_angle(abs(speed) * 10, angle_deg, wait=True)
 
 def RightAttachmentRotate(speed, angle_deg):
-    motor_b.run_angle(abs(speed) * 10, angle_deg, wait=True)
+    motor_a.run_angle(abs(speed) * 10, angle_deg, wait=True)
 
 def ToggleYawCorrection(state):
     global yaw_correction_enabled
@@ -84,21 +84,29 @@ def Stop():
     motor_a.stop()
     motor_b.stop()
 
+def AttachmentReset():
+    LeftAttachmentRotate(100, 30)
+    RightAttachmentRotate(100, 30)
+    LeftAttachmentRotate(100, -180)
+    RightAttachmentRotate(100, -180)
+
 # 3. Paste the generated python commands from your controller terminal here.
 
 def run_recording():
     # --- PASTE RECORDING BELOW THIS LINE ---
+    AttachmentReset()
+    LeftAttachmentRotate(100, 180)
     Drive(220, 6)
     Rotate(90, -10)
     Drive(220, 58)
     Rotate(90, 95)
-    RightAttachmentRotate(50, 20)
+    LeftAttachmentRotate(50, 20)
     Drive(50, 10)
-    RightAttachmentRotate(100, -100)
-    RightAttachmentRotate(100, 100)
+    LeftAttachmentRotate(100, -100)
+    LeftAttachmentRotate(100, 100)
     Drive(50, -5)
     Rotate(90, -95)
-    Drive(220, -60)
+    Drive(1000, -65)
     Stop()
 
 # 4. Run once when this program is started from its physical hub slot.
