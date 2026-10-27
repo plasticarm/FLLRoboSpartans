@@ -93,41 +93,65 @@ def AttachmentReset():
 # 3. Paste the generated python commands from your controller terminal here.
 
 def run_recording():
+
+    
     # Leafcutter Frenzy: 40 Points
     AttachmentReset()
+    
     Drive(220, 6)
     Rotate(90, -60)
-    Drive(220, 60)
-    Rotate(90, 60)
-    Drive(220, 20)
-    Rotate(90, 25)
+    Drive(220, 43)
+    RightAttachmentRotate(200, 180)
+    Rotate(100, -7.5)
+    Drive(100, 10)
+    RightAttachmentRotate(5, -125)
+    Rotate(150, 5)
+    Drive(100, 1.5)
+    RightAttachmentRotate(100, 90)
+    Drive(100,-1)
+    Rotate(150,45)
+    RightAttachmentRotate(100,-150)
+    Drive(150,24)
+    Rotate(100, 46)
+    #Hit the ant
     Drive(50, 35)
-    # Window to the past: 20 Points
-    Drive(220, -10)
-    Rotate(220, 60)
-    Drive(220, 10)
-    Rotate(100, 41)
-    Drive(220, 10)
-    Drive(200, -10)
-    # Forest Elder: 30 Points
-    Rotate(220, -40)
+    #hit the dirt window
+    Drive(50,-5)
+    Rotate(100,90)
+    Drive(220, 12)
+    Drive(200, -10)                                                      
+    Rotate(220, -25)
     LeftAttachmentRotate(100, 180)
-    Drive(220, 26)
+    Drive(220, 30)
     LeftAttachmentRotate(100, -100)
     LeftAttachmentRotate(100, 100)
+    #Tree stick up
     Drive(50, -10)
-    # Humongous Fungus: 30 Points
     LeftAttachmentRotate(100, -180)
-    Drive(50, 3)
+    Drive(50, 1)
     Rotate(90, -95)
+    Drive(50,-2)
     RightAttachmentRotate(100, 180)
     Rotate(100, -20)
+    #Behind the mycinium thing
     Drive(100, -10)
+    #Pulled back 
     Drive(100, 10)
     Rotate(100, 20)
-    Drive(1000, -65)
+    Drive(1000, -65)   
+    #At home
+    AttachmentReset()
+    Drive(150,37)
+    RightAttachmentRotate(100,155)
+    Drive(100,4)
+    RightAttachmentRotate(100,-80)
+    Drive(150,-15)
+    RightAttachmentRotate(100,-60)
+    Drive(150,-4)
+    RightAttachmentRotate(100,100)
+    Drive(150,2)
     Stop()
-
+    
 # 4. Run once when this program is started from its physical hub slot.
 print("\n>>> Running recording...")
 hub.imu.reset_heading(0)
